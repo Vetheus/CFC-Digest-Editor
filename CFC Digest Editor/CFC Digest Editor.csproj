@@ -56,6 +56,14 @@
     <Compile Include="About.designer.cs">
       <DependentUpon>About.cs</DependentUpon>
     </Compile>
+    <Compile Include="cfcdigutils\Compression.cs" />
+    <Compile Include="cfcdigutils\DIG.cs" />
+    <Compile Include="cfcdigutils\FAT.cs" />
+    <Compile Include="cfcdigutils\Package.cs" />
+    <Compile Include="cfcdigutils\Records.cs" />
+    <Compile Include="classes\BinaryUtils.cs" />
+    <Compile Include="classes\PopulateNodes.cs" />
+    <Compile Include="classes\StringTerminator.cs" />
     <Compile Include="Main.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -71,7 +79,7 @@
       <DependentUpon>Main.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
+      <Generator>PublicResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
       <SubType>Designer</SubType>
     </EmbeddedResource>
@@ -110,6 +118,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="icon.ico" />
+    <None Include="Resources\folder.png" />
+    <None Include="Resources\file.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
