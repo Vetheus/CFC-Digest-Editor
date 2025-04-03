@@ -529,8 +529,9 @@ namespace CFC_Digest_Editor.classes
             list.AddRange(BitConverter.GetBytes((UInt32)Data_Count));
             list.AddRange(BitConverter.GetBytes((UInt64)0));
 
-            int Offset = 0x10 + (Count * 0x50) + (Count * 0x14) + (Data_Count * 0x10);
+            int Offset = (Data_Count * 0x10) + 0x34;
 
+            int k = 0;
             for (int i =0; i< Images.Count; i++)
             {
                 // Calculando os offsets e tamanhos antes
@@ -540,14 +541,15 @@ namespace CFC_Digest_Editor.classes
                 array.AddRange(Images[i].TEX);
                 array.AddRange(Images[i].CLUT);
 
-                Indexes[i].TEX_Index = (ushort)i;
-                Indexes[i].CLUT_Index = (ushort)(i+1);
+                Indexes[i].TEX_Index = (ushort)k;
+                Indexes[i].CLUT_Index = (ushort)(k+1);
 
-                Blocks[i].BlockOffset = Offset;
-                Offset += 0x10 + texSize;
+                Blocks[k].BlockOffset = Offset;
+                Offset += texSize - 0x10;
 
-                Blocks[i+1].BlockOffset = Offset;
-                Offset += 0x10 + clutSize; 
+                Blocks[k + 1].BlockOffset = Offset;
+                Offset += clutSize - 0x10;
+                k += 2;
             }
 
             foreach (var entry in Entries)
@@ -568,6 +570,7 @@ namespace CFC_Digest_Editor.classes
                 list.AddRange(BitConverter.GetBytes((UInt16)block.Height2));
                 list.AddRange(BitConverter.GetBytes((UInt16)0));
             }
+            list.AddRange(new byte[0x34]);
 
             list.AddRange(array.ToArray());
 

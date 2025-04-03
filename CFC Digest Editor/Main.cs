@@ -267,10 +267,10 @@ namespace CFC_Digest_Editor
                             RecordsList.Add(records);
                             Records.CurrentTbl += 24;
                         }
-                    await Task.Run(() =>
-                    {
+                    //await Task.Run(() =>
+                   // {
                         DIG.Unpack(binaryReader1, binaryReader2, this.path, packageList, RecordsList);
-                    });
+                    //});
                 }
                     ShowHide(new Control[1] { MainLayout });
 
