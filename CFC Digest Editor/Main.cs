@@ -311,13 +311,14 @@ namespace CFC_Digest_Editor
             if (opn.ShowDialog() == DialogResult.OK)
             {
                 var tim2 = TM2.GetClutandTex(System.IO.File.ReadAllBytes(opn.FileName));
+                int bpp = (tim2.Bpp == 5 ? 8 : 4);
                 if (tim2.Width != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width ||
                     tim2.Height != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height ||
-                    tim2.Bpp != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp)
+                   bpp != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp)
                 {
                     MessageBox.Show($"Texture size/Bpp mismatch!\nExpected: " +
                         $"{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width}x{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height} - {TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp}Bpp\n" +
-                        $"Imported: {tim2.Width}x{tim2.Height} - {tim2.Bpp}Bpp", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        $"Imported: {tim2.Width}x{tim2.Height} - {bpp}Bpp", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
                 var values = TEXmages.GetPixelandColorData(System.IO.File.ReadAllBytes(opn.FileName), true);
@@ -330,6 +331,11 @@ namespace CFC_Digest_Editor
 
                 MessageBox.Show($"Imported texture from:\n{opn.FileName}!", "Action");
             }
+        }
+
+        private void PropertyControl_PropertyValueChanged(object s, PropertyValueChangedEventArgs e)
+        {
+            PropertyControl.Update();
         }
 
         private void DigTree_AfterSelect(object sender, TreeViewEventArgs e)

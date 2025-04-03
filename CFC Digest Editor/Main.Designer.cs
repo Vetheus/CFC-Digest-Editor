@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.TreeNode treeNode2 = new System.Windows.Forms.TreeNode("data");
+            System.Windows.Forms.TreeNode treeNode1 = new System.Windows.Forms.TreeNode("data");
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -165,11 +165,11 @@
             this.DigTree.ImageList = this.imageList1;
             this.DigTree.Location = new System.Drawing.Point(3, 3);
             this.DigTree.Name = "DigTree";
-            treeNode2.ImageKey = "folder";
-            treeNode2.Name = "Nó0";
-            treeNode2.Text = "data";
+            treeNode1.ImageKey = "folder";
+            treeNode1.Name = "Nó0";
+            treeNode1.Text = "data";
             this.DigTree.Nodes.AddRange(new System.Windows.Forms.TreeNode[] {
-            treeNode2});
+            treeNode1});
             this.DigTree.SelectedImageIndex = 0;
             this.DigTree.Size = new System.Drawing.Size(361, 374);
             this.DigTree.TabIndex = 0;
@@ -220,6 +220,7 @@
             this.PropertyControl.Size = new System.Drawing.Size(264, 130);
             this.PropertyControl.TabIndex = 1;
             this.PropertyControl.ToolbarVisible = false;
+            this.PropertyControl.PropertyValueChanged += new System.Windows.Forms.PropertyValueChangedEventHandler(this.PropertyControl_PropertyValueChanged);
             // 
             // contextMenuStrip1
             // 

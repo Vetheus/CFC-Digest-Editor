@@ -286,11 +286,14 @@ namespace CFC_Digest_Editor.classes
                     if (opn.ShowDialog() == DialogResult.OK)
                     {
                         var tim2 = TM2.GetClutandTex(System.IO.File.ReadAllBytes(opn.FileName));
-                        if (tim2.Width != img.Images[Convert.ToInt32(img.Choosed)].Width || tim2.Height != img.Images[Convert.ToInt32(img.Choosed)].Height)
+                        int bpp = (tim2.Bpp == 5 ? 8 : 4);
+                        if (tim2.Width != img.Images[Convert.ToInt32(img.Choosed)].Width 
+                            || tim2.Height != img.Images[Convert.ToInt32(img.Choosed)].Height ||
+                             bpp != img.Images[Convert.ToInt32(img.Choosed)].Bpp)
                         {
                             MessageBox.Show($"Texture size/Bpp mismatch!\nExpected: " +
                                                     $"{img.Images[Convert.ToInt32(img.Choosed)].Width}x{img.Images[Convert.ToInt32(img.Choosed)].Height} - {img.Images[Convert.ToInt32(img.Choosed)].Bpp}Bpp\n" +
-                                                    $"Imported: {tim2.Width}x{tim2.Height} - {tim2.Bpp}Bpp", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); return value;
+                                                    $"Imported: {tim2.Width}x{tim2.Height} - {bpp}Bpp", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); return value;
                         }
                         var values = img.GetPixelandColorData(System.IO.File.ReadAllBytes(opn.FileName), true);
                         img.Images[Convert.ToInt32(img.Choosed)].TEX = values[0];
@@ -307,6 +310,7 @@ namespace CFC_Digest_Editor.classes
                 else
                     return value;
             }
+
         }
         public class ExportAll : UITypeEditor
         {
@@ -351,6 +355,7 @@ namespace CFC_Digest_Editor.classes
         {
             get
             {
+                OnPropertyChanged(nameof(Choosed));
                 return Choosed;
             }
             set
@@ -406,7 +411,11 @@ namespace CFC_Digest_Editor.classes
             get { return _exp; }
             set { _exp = value; }
         }
-
+        public event PropertyChangedEventHandler PropertyChanged;
+        protected virtual void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
 
         private struct Block
         {
