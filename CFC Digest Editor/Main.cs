@@ -267,10 +267,10 @@ namespace CFC_Digest_Editor
                             RecordsList.Add(records);
                             Records.CurrentTbl += 24;
                         }
-                    //await Task.Run(() =>
-                   // {
+                    await Task.Run(() =>
+                    {
                         DIG.Unpack(binaryReader1, binaryReader2, this.path, packageList, RecordsList);
-                    //});
+                    });
                 }
                     ShowHide(new Control[1] { MainLayout });
 
@@ -311,9 +311,13 @@ namespace CFC_Digest_Editor
             if (opn.ShowDialog() == DialogResult.OK)
             {
                 var tim2 = TM2.GetClutandTex(System.IO.File.ReadAllBytes(opn.FileName));
-                if (tim2.Width != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width || tim2.Height != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height)
+                if (tim2.Width != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width ||
+                    tim2.Height != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height ||
+                    tim2.Bpp != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp)
                 {
-                    MessageBox.Show($"Texture size mismatch!\nExpected: {TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width}x{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height}\nImported: {tim2.Width}x{tim2.Height}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show($"Texture size/Bpp mismatch!\nExpected: " +
+                        $"{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width}x{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height} - {TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp}Bpp\n" +
+                        $"Imported: {tim2.Width}x{tim2.Height} - {tim2.Bpp}Bpp", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
                 var values = TEXmages.GetPixelandColorData(System.IO.File.ReadAllBytes(opn.FileName), true);
@@ -322,7 +326,7 @@ namespace CFC_Digest_Editor
                 TEXmages.GetImage(Convert.ToInt32(TEXmages.Choosed), out System.Drawing.Image mage);
                 IMG._main.imageViewer.Image = mage;
 
-                File.WriteAllBytes(str,TEXmages.RebuildIMG());
+                File.WriteAllBytes(str,TEXmages.RebuildIMG(tim2.Bpp));
 
                 MessageBox.Show($"Imported texture from:\n{opn.FileName}!", "Action");
             }

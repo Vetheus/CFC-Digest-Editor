@@ -288,8 +288,9 @@ namespace CFC_Digest_Editor.classes
                         var tim2 = TM2.GetClutandTex(System.IO.File.ReadAllBytes(opn.FileName));
                         if (tim2.Width != img.Images[Convert.ToInt32(img.Choosed)].Width || tim2.Height != img.Images[Convert.ToInt32(img.Choosed)].Height)
                         {
-                            MessageBox.Show($"Texture size mismatch!\nExpected: {img.Images[Convert.ToInt32(img.Choosed)].Width}x{img.Images[Convert.ToInt32(img.Choosed)].Height}\nImported: {tim2.Width}x{tim2.Height}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            return value;
+                            MessageBox.Show($"Texture size/Bpp mismatch!\nExpected: " +
+                                                    $"{img.Images[Convert.ToInt32(img.Choosed)].Width}x{img.Images[Convert.ToInt32(img.Choosed)].Height} - {img.Images[Convert.ToInt32(img.Choosed)].Bpp}Bpp\n" +
+                                                    $"Imported: {tim2.Width}x{tim2.Height} - {tim2.Bpp}Bpp", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); return value;
                         }
                         var values = img.GetPixelandColorData(System.IO.File.ReadAllBytes(opn.FileName), true);
                         img.Images[Convert.ToInt32(img.Choosed)].TEX = values[0];
@@ -298,7 +299,7 @@ namespace CFC_Digest_Editor.classes
                         IMG._main.imageViewer.Image = mage;
                         string str = _main.path + "\\" + _main.nodepath;
 
-                        File.WriteAllBytes(str, img.RebuildIMG());
+                        File.WriteAllBytes(str, img.RebuildIMG(tim2.Bpp));
                         MessageBox.Show($"Imported texture from:\n{opn.FileName}!", "Action");
                     }
                     return value; // Retorna o valor original (ou alterado, se necessário)
@@ -407,18 +408,6 @@ namespace CFC_Digest_Editor.classes
         }
 
 
-        //[Category("Image Array")]
-        //[TypeConverter(typeof(ExpandableObjectConverter))]
-        //[DisplayName("Entry")]
-        //public IMG_Entry Entry
-        //{
-        //    get
-        //    {
-        //        return Images[Convert.ToInt32(Choosed)].Entry;
-        //    }
-        //}
-
-
         private struct Block
         {
             public int BlockOffset;
@@ -519,7 +508,7 @@ namespace CFC_Digest_Editor.classes
             return img;
         }
 
-        public byte[] RebuildIMG()
+        public byte[] RebuildIMG(int bpp)
         {
             var list = new List<byte>();
 
@@ -534,6 +523,7 @@ namespace CFC_Digest_Editor.classes
             int k = 0;
             for (int i =0; i< Images.Count; i++)
             {
+                Images[i].Bpp = bpp == 5 ? 4: 8;
                 // Calculando os offsets e tamanhos antes
                 int texSize = Images[i].TEX.Length;
                 int clutSize = Images[i].Bpp == 4 ? 0x40 : 0x400;
