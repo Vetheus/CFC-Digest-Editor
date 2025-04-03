@@ -42,13 +42,13 @@
             this.MainLayout = new System.Windows.Forms.TableLayoutPanel();
             this.SubLayout = new System.Windows.Forms.TableLayoutPanel();
             this.DigTree = new System.Windows.Forms.TreeView();
+            this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             this.viewLayout = new System.Windows.Forms.TableLayoutPanel();
             this.imageViewer = new System.Windows.Forms.PictureBox();
             this.PropertyControl = new System.Windows.Forms.PropertyGrid();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.contextMenuStrip2 = new System.Windows.Forms.ContextMenuStrip(this.components);
-            this.imageList1 = new System.Windows.Forms.ImageList(this.components);
             this.importToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.contextMenuStrip2 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.extractFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.importFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
@@ -94,7 +94,7 @@
             // 
             this.saveToolStripMenuItem.Enabled = false;
             this.saveToolStripMenuItem.Name = "saveToolStripMenuItem";
-            this.saveToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.saveToolStripMenuItem.Size = new System.Drawing.Size(112, 22);
             this.saveToolStripMenuItem.Text = "Save";
             this.saveToolStripMenuItem.Click += new System.EventHandler(this.buildFileToolStripMenuItem_Click);
             // 
@@ -102,7 +102,7 @@
             // 
             this.saveAsToolStripMenuItem.Enabled = false;
             this.saveAsToolStripMenuItem.Name = "saveAsToolStripMenuItem";
-            this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.saveAsToolStripMenuItem.Size = new System.Drawing.Size(112, 22);
             this.saveAsToolStripMenuItem.Text = "Save as";
             this.saveAsToolStripMenuItem.Click += new System.EventHandler(this.saveAsToolStripMenuItem_Click);
             // 
@@ -146,8 +146,8 @@
             // SubLayout
             // 
             this.SubLayout.ColumnCount = 2;
-            this.SubLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.SubLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.SubLayout.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.SubLayout.Controls.Add(this.DigTree, 0, 0);
             this.SubLayout.Controls.Add(this.viewLayout, 1, 0);
             this.SubLayout.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -171,11 +171,18 @@
             this.DigTree.Nodes.AddRange(new System.Windows.Forms.TreeNode[] {
             treeNode2});
             this.DigTree.SelectedImageIndex = 0;
-            this.DigTree.Size = new System.Drawing.Size(637, 374);
+            this.DigTree.Size = new System.Drawing.Size(361, 374);
             this.DigTree.TabIndex = 0;
             this.DigTree.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.DigTree_AfterSelect);
             this.DigTree.NodeMouseClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.treeView1_NodeMouseClick);
             this.DigTree.NodeMouseDoubleClick += new System.Windows.Forms.TreeNodeMouseClickEventHandler(this.treeView1_NodeMouseDoubleClick);
+            // 
+            // imageList1
+            // 
+            this.imageList1.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("imageList1.ImageStream")));
+            this.imageList1.TransparentColor = System.Drawing.Color.Transparent;
+            this.imageList1.Images.SetKeyName(0, "file");
+            this.imageList1.Images.SetKeyName(1, "folder");
             // 
             // viewLayout
             // 
@@ -184,12 +191,12 @@
             this.viewLayout.Controls.Add(this.imageViewer, 0, 0);
             this.viewLayout.Controls.Add(this.PropertyControl, 0, 1);
             this.viewLayout.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.viewLayout.Location = new System.Drawing.Point(646, 3);
+            this.viewLayout.Location = new System.Drawing.Point(370, 3);
             this.viewLayout.Name = "viewLayout";
             this.viewLayout.RowCount = 2;
             this.viewLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.viewLayout.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.viewLayout.Size = new System.Drawing.Size(1, 374);
+            this.viewLayout.Size = new System.Drawing.Size(270, 374);
             this.viewLayout.TabIndex = 1;
             // 
             // imageViewer
@@ -197,26 +204,37 @@
             this.imageViewer.Dock = System.Windows.Forms.DockStyle.Fill;
             this.imageViewer.Location = new System.Drawing.Point(3, 3);
             this.imageViewer.Name = "imageViewer";
-            this.imageViewer.Size = new System.Drawing.Size(1, 232);
+            this.imageViewer.Size = new System.Drawing.Size(264, 232);
             this.imageViewer.SizeMode = System.Windows.Forms.PictureBoxSizeMode.StretchImage;
             this.imageViewer.TabIndex = 0;
             this.imageViewer.TabStop = false;
+            this.imageViewer.Click += new System.EventHandler(this.imageViewer_Click);
+            this.imageViewer.MouseClick += new System.Windows.Forms.MouseEventHandler(this.imageViewer_MouseClick);
             // 
             // PropertyControl
             // 
             this.PropertyControl.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.PropertyControl.HelpVisible = false;
             this.PropertyControl.Location = new System.Drawing.Point(3, 241);
             this.PropertyControl.Name = "PropertyControl";
-            this.PropertyControl.Size = new System.Drawing.Size(1, 130);
+            this.PropertyControl.Size = new System.Drawing.Size(264, 130);
             this.PropertyControl.TabIndex = 1;
+            this.PropertyControl.ToolbarVisible = false;
             // 
             // contextMenuStrip1
             // 
             this.contextMenuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.importToolStripMenuItem});
             this.contextMenuStrip1.Name = "contextMenuStrip1";
-            this.contextMenuStrip1.Size = new System.Drawing.Size(181, 48);
+            this.contextMenuStrip1.Size = new System.Drawing.Size(147, 26);
             this.contextMenuStrip1.Text = "Folder";
+            // 
+            // importToolStripMenuItem
+            // 
+            this.importToolStripMenuItem.Name = "importToolStripMenuItem";
+            this.importToolStripMenuItem.Size = new System.Drawing.Size(146, 22);
+            this.importToolStripMenuItem.Text = "Extract Folder";
+            this.importToolStripMenuItem.Click += new System.EventHandler(this.extractFolderToolStripMenuItem_Click);
             // 
             // contextMenuStrip2
             // 
@@ -226,31 +244,17 @@
             this.contextMenuStrip2.Name = "contextMenuStrip2";
             this.contextMenuStrip2.Size = new System.Drawing.Size(132, 48);
             // 
-            // imageList1
-            // 
-            this.imageList1.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("imageList1.ImageStream")));
-            this.imageList1.TransparentColor = System.Drawing.Color.Transparent;
-            this.imageList1.Images.SetKeyName(0, "file");
-            this.imageList1.Images.SetKeyName(1, "folder");
-            // 
-            // importToolStripMenuItem
-            // 
-            this.importToolStripMenuItem.Name = "importToolStripMenuItem";
-            this.importToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.importToolStripMenuItem.Text = "Extract Folder";
-            this.importToolStripMenuItem.Click += new System.EventHandler(this.extractFolderToolStripMenuItem_Click);
-            // 
             // extractFileToolStripMenuItem
             // 
             this.extractFileToolStripMenuItem.Name = "extractFileToolStripMenuItem";
-            this.extractFileToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.extractFileToolStripMenuItem.Size = new System.Drawing.Size(131, 22);
             this.extractFileToolStripMenuItem.Text = "Extract File";
             this.extractFileToolStripMenuItem.Click += new System.EventHandler(this.extractFileToolStripMenuItem_Click);
             // 
             // importFileToolStripMenuItem
             // 
             this.importFileToolStripMenuItem.Name = "importFileToolStripMenuItem";
-            this.importFileToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.importFileToolStripMenuItem.Size = new System.Drawing.Size(131, 22);
             this.importFileToolStripMenuItem.Text = "Import File";
             this.importFileToolStripMenuItem.Click += new System.EventHandler(this.importFileToolStripMenuItem_Click);
             // 

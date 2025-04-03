@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using CFC_Digest_Editor.Classes;
 using CFC_Digest_Editor.CFCDIGUtils;
+using System.Reflection;
+using NUC_Raw_Tools.ArquivoRAW;
+using CFC_Digest_Editor.classes;
 
 namespace CFC_Digest_Editor
 {
@@ -19,11 +22,12 @@ namespace CFC_Digest_Editor
 
         public static Main maininstance;
         public static bool error;
-        private string path = "C:\\tmp";
+        public string path = "C:\\tmp";
         private string title = "CFC Digest Editor";
         public string datafolder = "C:\\tmp\\data";
-        private string nodepath;
-        private string nodename;
+        public string nodepath;
+        public string nodename;
+        public IMG TEXmages;
 
         public Main()
         {
@@ -32,14 +36,14 @@ namespace CFC_Digest_Editor
             DigTree.Nodes[0].Tag = (object)"nothing";
         }
 
-
         private void exitToolStripMenuItem_Click(object sender, EventArgs e) 
             => Application.Exit();
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
             => new AboutBox1(this).ShowDialog();
 
-        private void ShowHide(Control[] controls) => Array.ForEach(controls, c => c.Visible = !c.Visible);
+        private void ShowHide(Control[] controls) => 
+            Array.ForEach(controls, c => c.Visible = !c.Visible);
         private static void CloneDirectory(string root, string dest)
         {
             foreach (string directory in Directory.GetDirectories(root))
@@ -282,9 +286,73 @@ namespace CFC_Digest_Editor
         }
         private void openToolStripMenuItem_Click(object sender, EventArgs e) => ReadDig();
 
+        private void imageViewer_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog saveFileDialog = new SaveFileDialog();
+            saveFileDialog.Title = "Select where to save your TIM2 texture.";
+            saveFileDialog.Filter = "PS2 TIM2 Texture(*.tm2)|*.tm2";
+            if(saveFileDialog.ShowDialog() != DialogResult.OK)
+                return;
+
+            System.IO.File.WriteAllBytes(saveFileDialog.FileName, TEXmages.GetImage(Convert.ToInt32(TEXmages.Choosed), out var mage));
+            MessageBox.Show($"Exported texture to:\n{saveFileDialog.FileName}!", "Action");
+        }
+
+        private void imageViewer_MouseClick(object sender, MouseEventArgs e)
+        {
+            if (e.Button != MouseButtons.Right)
+                return;
+
+            string str = this.path + "\\" + this.nodepath;
+
+            OpenFileDialog opn = new OpenFileDialog();
+            opn.Title = "Select a TIM2 Texture to import.";
+            opn.Filter = "PS2 TIM2 Texture(*.tm2)|*.tm2";
+            if (opn.ShowDialog() == DialogResult.OK)
+            {
+                var tim2 = TM2.GetClutandTex(System.IO.File.ReadAllBytes(opn.FileName));
+                if (tim2.Width != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width || tim2.Height != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height)
+                {
+                    MessageBox.Show($"Texture size mismatch!\nExpected: {TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width}x{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height}\nImported: {tim2.Width}x{tim2.Height}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+                var values = TEXmages.GetPixelandColorData(System.IO.File.ReadAllBytes(opn.FileName), true);
+                TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].TEX = values[0];
+                TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].CLUT = values[1];
+                TEXmages.GetImage(Convert.ToInt32(TEXmages.Choosed), out System.Drawing.Image mage);
+                IMG._main.imageViewer.Image = mage;
+
+                File.WriteAllBytes(str,TEXmages.RebuildIMG());
+
+                MessageBox.Show($"Imported texture from:\n{opn.FileName}!", "Action");
+            }
+        }
+
         private void DigTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
+            switch (e.Node.Tag.ToString())
+            {
+                case "file":
+                    this.nodename = e.Node.Text;
+                    this.nodepath = e.Node.FullPath;
+                    FileInfo fileInfo = new FileInfo(e.Node.FullPath);
+                    string str = this.path + "\\" + this.nodepath;
+                    switch (fileInfo.Extension)
+                    {
+                        case ".img":
+                            TEXmages = new IMG(this).Read(File.ReadAllBytes(str), imageViewer);
+                            TEXmages.GetImage(0, out var mage);
 
+                            imageViewer.Image = mage;
+                            PropertyControl.SelectedObject = TEXmages;
+                            break;
+
+                        default:
+
+                            break;
+                    }
+                    break;
+            }
         }
     }
 }

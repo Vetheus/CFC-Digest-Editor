@@ -147,6 +147,7 @@ namespace CFC_Digest_Editor.CFCDIGUtils
 
             foreach (Records record in RecordsList)
             {
+                
                 Main.maininstance.Text = $"{originalText} - Writing Packages ({dataOffset + 1}/{PakCount})...";
                 dataOffset++;
                 // Implementação do processo de empacotamento
