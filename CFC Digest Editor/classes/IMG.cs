@@ -561,6 +561,7 @@ namespace CFC_Digest_Editor.classes
 
             foreach (var block in Blocks)
             {
+                list.AddRange(BitConverter.GetBytes((UInt32)0));
                 list.AddRange(BitConverter.GetBytes((UInt32)block.BlockOffset));
                 list.AddRange(BitConverter.GetBytes((UInt16)block.Width));
                 list.AddRange(BitConverter.GetBytes((UInt16)block.Height));
