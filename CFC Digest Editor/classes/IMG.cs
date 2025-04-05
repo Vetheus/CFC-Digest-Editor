@@ -3,10 +3,12 @@ using Rainbow.ImgLib.Encoding;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
 using System.Drawing;
 using System.Drawing.Design;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -185,6 +187,8 @@ namespace CFC_Digest_Editor.classes
             public ushort Width;
             public ushort Height;
 
+            public int TexOffset, ClutOffset;
+
             public bool WithError = false;
 
             public static IndexBlock Read(byte[] input) => new IndexBlock()
@@ -217,8 +221,8 @@ namespace CFC_Digest_Editor.classes
             public byte[] TEX;
             public byte[] CLUT;
 
-            public int Width;
-            public int Height;
+            public int Width,Wunswizz;
+            public int Height, Hunswizz;
             public int Bpp;
 
             public int Width_A, Height_A, Width_B;
@@ -291,18 +295,24 @@ namespace CFC_Digest_Editor.classes
                             || tim2.Height != img.Images[Convert.ToInt32(img.Choosed)].Height ||
                              bpp != img.Images[Convert.ToInt32(img.Choosed)].Bpp)
                         {
-                            MessageBox.Show($"Texture size/Bpp mismatch!\nExpected: " +
-                                                    $"{img.Images[Convert.ToInt32(img.Choosed)].Width}x{img.Images[Convert.ToInt32(img.Choosed)].Height} - {img.Images[Convert.ToInt32(img.Choosed)].Bpp}Bpp\n" +
-                                                    $"Imported: {tim2.Width}x{tim2.Height} - {bpp}Bpp", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error); return value;
+                            if (img.Images[Convert.ToInt32(img.Choosed)].Index.WithError == false)
+                            {
+                                MessageBox.Show($"Texture size/Bpp mismatch!\nExpected: " +
+                                                        $"{img.Images[Convert.ToInt32(img.Choosed)].Width}x{img.Images[Convert.ToInt32(img.Choosed)].Height} - {img.Images[Convert.ToInt32(img.Choosed)].Bpp}Bpp\n" +
+                                                        $"Imported: {tim2.Width}x{tim2.Height} - {bpp}Bpp", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                                return value;
+                            }
                         }
-                        var values = img.GetPixelandColorData(System.IO.File.ReadAllBytes(opn.FileName), true);
+                        var values = img.GetPixelandColorData(System.IO.File.ReadAllBytes(opn.FileName), Convert.ToInt32(img.Choosed), true);
                         img.Images[Convert.ToInt32(img.Choosed)].TEX = values[0];
                         img.Images[Convert.ToInt32(img.Choosed)].CLUT = values[1];
                         img.GetImage(Convert.ToInt32(img.Choosed), out System.Drawing.Image mage);
                         IMG._main.imageViewer.Image = mage;
                         string str = _main.path + "\\" + _main.nodepath;
 
-                        File.WriteAllBytes(str, img.RebuildIMG(tim2.Bpp));
+                        img.ReWriteIMG(str);
+
+                        //File.WriteAllBytes(str, img.RebuildIMG(tim2.Bpp));
                         MessageBox.Show($"Imported texture from:\n{opn.FileName}!", "Action");
                     }
                     return value; // Retorna o valor original (ou alterado, se necessário)
@@ -355,7 +365,6 @@ namespace CFC_Digest_Editor.classes
         {
             get
             {
-                OnPropertyChanged(nameof(Choosed));
                 return Choosed;
             }
             set
@@ -363,7 +372,10 @@ namespace CFC_Digest_Editor.classes
                 Choosed = value;
                 GetImage(Convert.ToInt32(Choosed), out System.Drawing.Image mage);
                 _main.imageViewer.Image = mage;
-
+                OnPropertyChanged(nameof(Choosed));
+                OnPropertyChanged(nameof(Width));
+                OnPropertyChanged(nameof(Height));
+                OnPropertyChanged(nameof(Bpp));
 
             }
         }
@@ -411,6 +423,17 @@ namespace CFC_Digest_Editor.classes
             get { return _exp; }
             set { _exp = value; }
         }
+
+        [Category("Image Array")]
+        [DisplayName("With Errors?")]
+        public bool Error
+        {
+            get
+            {
+                return Images[Convert.ToInt32(Choosed)].Index.WithError;
+            }
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         protected virtual void OnPropertyChanged(string propertyName)
         {
@@ -470,16 +493,26 @@ namespace CFC_Digest_Editor.classes
                 int clutOffset = img.Blocks[entry.CLUT_Index].BlockOffset
                     + 0x10 + (img.Count * 0x50) + (img.Count * 0x14) + (0x10 + (0x10 * (entry.CLUT_Index-1)));
 
-                if (texSize < clutOffset - texOffset)
+                entry.TexOffset = texOffset;
+                entry.ClutOffset = clutOffset;
+
+                int width = entry.Width;
+                int height = entry.Height;
+                int wuznws = img.Blocks[entry.TEX_Index].Width;
+                int huznws = img.Blocks[entry.TEX_Index].Height;
+                if (texSize < (clutOffset - texOffset))
                 {
                     entry.WithError = true;
 
                     // Corrigindo o tamanho da textura
                     texSize = (clutOffset - texOffset);
-                    int width = (int)Math.Sqrt(texSize / 2);
-                    int height = texSize / width; // Assume que a imagem é bem formada
+                    width = img.Blocks[entry.TEX_Index].Width + img.Blocks[entry.TEX_Index].Height2;
+                    height = img.Blocks[entry.TEX_Index].Height * 4;
+                    wuznws = width;
+                    huznws = img.Blocks[entry.TEX_Index].Width + img.Blocks[entry.TEX_Index].Height;
                 }
 
+                
                 int clutSize = img.Blocks[entry.CLUT_Index].Bpp == 2 ? 0x40 : 0x400;
 
                 // Criando a imagem
@@ -488,9 +521,12 @@ namespace CFC_Digest_Editor.classes
                     TEX = input.ReadBytes(texOffset, texSize),
                     CLUT = input.ReadBytes(clutOffset, clutSize),
 
-                    Width = entry.Width,
-                    Height = entry.Height,
+                    Width = width,
+                    Height = height,
                     Bpp = img.Blocks[entry.CLUT_Index].Bpp == 2 ? 4 : 8,
+                    
+                    Wunswizz = wuznws,
+                    Hunswizz = huznws,
 
                     Width_A = img.Blocks[entry.TEX_Index].Width,
                     Height_A = img.Blocks[entry.TEX_Index].Height,
@@ -517,6 +553,31 @@ namespace CFC_Digest_Editor.classes
             return img;
         }
 
+        public void ReWriteIMG(string path)
+        {
+            byte[] bytes = File.ReadAllBytes(path);
+
+            int i = 0;
+            foreach (var index in Indexes)
+            {
+                    Array.Copy(
+                    Images[i].TEX, // origem
+                    0,                           // início na origem
+                    bytes,                       // destino
+                    index.TexOffset,            // início no destino
+                    Images[i].TEX.Length // quantidade de bytes
+                );
+                Array.Copy(
+                    Images[i].CLUT, // origem
+                    0,                           // início na origem
+                    bytes,                       // destino
+                    index.ClutOffset,            // início no destino
+                    Images[i].CLUT.Length // quantidade de bytes
+                );
+                i++;
+            }
+            File.WriteAllBytes(path, bytes);
+        }
         public byte[] RebuildIMG(int bpp)
         {
             var list = new List<byte>();
@@ -527,27 +588,39 @@ namespace CFC_Digest_Editor.classes
             list.AddRange(BitConverter.GetBytes((UInt32)Data_Count));
             list.AddRange(BitConverter.GetBytes((UInt64)0));
 
-            int Offset = (Data_Count * 0x10) + 0x34;
+            int Offset = (Data_Count * 0x10) + 0x24;
 
             int k = 0;
-            for (int i =0; i< Images.Count; i++)
+            for (int i =0; i< Indexes.Count; i++)
             {
-                Images[i].Bpp = bpp == 5 ? 4: 8;
-                // Calculando os offsets e tamanhos antes
+                //Calculando os offsets e tamanhos antes
                 int texSize = Images[i].TEX.Length;
                 int clutSize = Images[i].Bpp == 4 ? 0x40 : 0x400;
 
-                array.AddRange(Images[i].TEX);
-                array.AddRange(Images[i].CLUT);
+
 
                 Indexes[i].TEX_Index = (ushort)k;
-                Indexes[i].CLUT_Index = (ushort)(k+1);
+                Indexes[i].CLUT_Index = (ushort)(k + 1);
 
                 Blocks[k].BlockOffset = Offset;
+                if (k > Images.Count)
+                {
+                    Blocks[k].Width = (ushort)Images[i].Width_A;
+                    Blocks[k].Height = (ushort)Images[i].Height_A;
+                    Blocks[k].Height2 = (ushort)Images[i].Width_B;
+                }
                 Offset += texSize - 0x10;
 
                 Blocks[k + 1].BlockOffset = Offset;
+                if (k + 1 > Images.Count)
+                {
+                    Blocks[k + 1].Width = (ushort)Images[i].CLT_Width_A;
+                    Blocks[k + 1].Height = (ushort)Images[i].CLT_Height_A;
+                    Blocks[k + 1].Height2 = (ushort)Images[i].CLT_Width_B;
+                }
                 Offset += clutSize - 0x10;
+
+
                 k += 2;
             }
 
@@ -569,7 +642,10 @@ namespace CFC_Digest_Editor.classes
                 list.AddRange(BitConverter.GetBytes((UInt16)block.Height2));
                 list.AddRange(BitConverter.GetBytes((UInt16)0));
             }
-            list.AddRange(new byte[0x34]);
+            while(list.Count < Blocks[0].BlockOffset + 0x10 +(0x50 * Count) + (0x14 * Count))
+            {
+                list.Add(0);
+            }
 
             list.AddRange(array.ToArray());
 
@@ -588,6 +664,16 @@ namespace CFC_Digest_Editor.classes
             int paletteidx = 0;
             int width = Images[Index].Width;
             int height = Images[Index].Height;
+            int wUnsw = width;
+            int hUnsw = height;
+
+            if (Images[Index].Index.WithError==true)
+            {
+                width = Images[Index].Width_A + Images[Index].Width_B;
+                height = Images[Index].Height_A*4;
+                wUnsw = width;
+                hUnsw = Images[Index].Width_A + Images[Index].Height_A;
+            }
 
             while (pos < Images[Index].CLUT.Length)
             {
@@ -604,7 +690,7 @@ namespace CFC_Digest_Editor.classes
 
             if (cores.Length <= 256 && cores.Length > 64)
             {
-                unswizzledPixelData = UnSwizzle8(width, height, Images[Index].TEX);
+                unswizzledPixelData = UnSwizzle8(wUnsw, hUnsw, Images[Index].TEX);
                 ImageDecoderIndexed imageDecoder = new ImageDecoderIndexed(unswizzledPixelData, width, height, 
                     IndexCodec.FromNumberOfColors(cores.Length, Rainbow.ImgLib.Common.ByteOrder.LittleEndian), cores);
                 image = imageDecoder.DecodeImage();
@@ -613,7 +699,7 @@ namespace CFC_Digest_Editor.classes
             }
             if (cores.Length <= 16)
             {
-                byte[] unswizz = ConvertPS2EA4bit(Images[Index].TEX, width, height, 4, false);
+                byte[] unswizz = ConvertPS2EA4bit(Images[Index].TEX, wUnsw, hUnsw, 4, false);
                 ImageDecoderIndexed imageDecoder = new ImageDecoderIndexed(
                     unswizz,
                     width, height,
@@ -625,12 +711,12 @@ namespace CFC_Digest_Editor.classes
             mage = image;
             return null;
         }
-        public List<byte[]> GetPixelandColorData(byte[] input, bool swizzle)
+        public List<byte[]> GetPixelandColorData(byte[] input, int index, bool swizzle)
         {
             var list = new List<byte[]>();
             var tim = TM2.GetClutandTex(input);
 
-            byte[] swizzled = swizzle ? (tim.Bpp == 4 ? ConvertPS2EA4bit(tim.TEX, tim.Width, tim.Height, 4, true) : Swizzle8(tim.Width, tim.Height, tim.TEX)) : tim.TEX;
+            byte[] swizzled = swizzle ? (tim.Bpp == 4 ? ConvertPS2EA4bit(tim.TEX, Images[index].Wunswizz, Images[index].Hunswizz, 4, true) : Swizzle8(tim.Width, tim.Height, tim.TEX)) : tim.TEX;
             list.Add(swizzled);
             list.Add(tim.CLUT);
             return list;

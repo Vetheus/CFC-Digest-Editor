@@ -267,10 +267,10 @@ namespace CFC_Digest_Editor
                             RecordsList.Add(records);
                             Records.CurrentTbl += 24;
                         }
-                    await Task.Run(() =>
-                    {
+                    //await Task.Run(() =>
+                    //{
                         DIG.Unpack(binaryReader1, binaryReader2, this.path, packageList, RecordsList);
-                    });
+                    //});
                 }
                     ShowHide(new Control[1] { MainLayout });
 
@@ -314,20 +314,22 @@ namespace CFC_Digest_Editor
                 int bpp = (tim2.Bpp == 5 ? 8 : 4);
                 if (tim2.Width != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width ||
                     tim2.Height != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height ||
-                   bpp != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp)
+                   bpp != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp 
+                   && TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Index.WithError==false)
                 {
                     MessageBox.Show($"Texture size/Bpp mismatch!\nExpected: " +
                         $"{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width}x{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height} - {TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp}Bpp\n" +
                         $"Imported: {tim2.Width}x{tim2.Height} - {bpp}Bpp", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
-                var values = TEXmages.GetPixelandColorData(System.IO.File.ReadAllBytes(opn.FileName), true);
+                var values = TEXmages.GetPixelandColorData(System.IO.File.ReadAllBytes(opn.FileName), Convert.ToInt32(TEXmages.Choosed), true);
                 TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].TEX = values[0];
                 TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].CLUT = values[1];
                 TEXmages.GetImage(Convert.ToInt32(TEXmages.Choosed), out System.Drawing.Image mage);
                 IMG._main.imageViewer.Image = mage;
 
-                File.WriteAllBytes(str,TEXmages.RebuildIMG(tim2.Bpp));
+                TEXmages.ReWriteIMG(str);
+                //File.WriteAllBytes(str,TEXmages.RebuildIMG(tim2.Bpp));
 
                 MessageBox.Show($"Imported texture from:\n{opn.FileName}!", "Action");
             }
