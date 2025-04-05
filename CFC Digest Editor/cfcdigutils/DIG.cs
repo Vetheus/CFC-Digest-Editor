@@ -132,30 +132,147 @@ namespace CFC_Digest_Editor.CFCDIGUtils
             }
         }
 
-        public static void Pack(BinaryReader fat, BinaryWriter dig, List<Records> RecordsList, string dataFolder)
+        public static void Pack(
+      BinaryReader fat,
+      BinaryWriter dig,
+      List<Records> RecordsList,
+      string datafolder)
         {
-            string originalText = Main.maininstance.Text;
-            int currentFileIndex = 0;
-            List<string> paddingEntries = new List<string>();
-
-            string paddingFilePath = Path.Combine(Path.GetDirectoryName(dataFolder), "paddEntries.txt");
-            if (File.Exists(paddingFilePath))
-                paddingEntries = File.ReadAllLines(paddingFilePath).ToList();
-
-            dig.Write(new byte[BinaryUtils.GetPaddedSize(PakCount * 16 + 16, 2048, 16)]);
-            int dataOffset = 0;
-
-            foreach (Records record in RecordsList)
+            string text = Main.maininstance.Text;
+            int curfile = 0;
+            List<string> stringList = new List<string>();
+            int size1 = 0;
+            int paddedSize1 = BinaryUtils.GetPaddedSize(DIG.PakCount * 16 + 16, 2048, 16);
+            int num1 = 0;
+            dig.Write(new byte[paddedSize1]);
+            int num2 = 0;
+            string str1 = datafolder + "\\paddEntries.txt";
+            string path1 = Path.GetDirectoryName(datafolder) + "\\paddEntries.txt";
+            if (File.Exists(path1))
+                stringList = ((IEnumerable<string>)File.ReadAllLines(path1)).ToList<string>();
+            foreach (Records records in RecordsList)
             {
-                
-                Main.maininstance.Text = $"{originalText} - Writing Packages ({dataOffset + 1}/{PakCount})...";
-                dataOffset++;
-                // Implementação do processo de empacotamento
+                Main.maininstance.Text = string.Format("{0} - Writing Packages ({1}/{2})...", (object)text, (object)(num2 + 1), (object)DIG.PakCount);
+                ++num2;
+                int num3 = 0;
+                int num4 = 16 * records.SecCount;
+                int num5 = 0;
+                for (int index1 = 0; index1 < records.SecCount; ++index1)
+                {
+                    fat.BaseStream.Position = (long)(records.Offset + 12 * index1);
+                    int num6 = fat.ReadInt32();
+                    int num7 = fat.ReadInt32();
+                    int paddedSize2 = BinaryUtils.GetPaddedSize(4 + 8 * num7, 16);
+                    int num8 = 0;
+                    int num9 = 0;
+                    dig.BaseStream.Position = (long)(paddedSize1 + num1 + num4 + num5);
+                    if (num7 != 0)
+                        dig.Write(num7);
+                    int num10 = 0;
+                    int length1;
+                    string path2;
+                    byte[] buffer;
+                    while (true)
+                    {
+                        length1 = 0;
+                        int index2 = stringList.FindIndex((Predicate<string>)(str => str.Contains(string.Format("index:[{0}]", (object)(curfile + 1)))));
+                        if (index2 >= 0)
+                            length1 = int.Parse(Regex.Match(stringList[index2 + 1], "\\d+").Value);
+                        int num11 = 0;
+                        if (num7 <= 0 || num10 != num7)
+                        {
+                            if (num7 == 0)
+                            {
+                                if (num6 != 0)
+                                    num11 = num6 + 1;
+                            }
+                            else
+                            {
+                                fat.BaseStream.Position = (long)(num6 + 8 * num10);
+                                num11 = fat.ReadInt32();
+                                if (num11 != 0)
+                                    ++num11;
+                            }
+                            if (num11 != 0)
+                            {
+                                fat.BaseStream.Position = (long)num11;
+                                string str2 = StringTerminator.ReadCFCFilename(fat);
+                                path2 = datafolder + "\\" + str2;
+                                if (Directory.Exists(Path.GetDirectoryName(path2)) && File.Exists(path2))
+                                {
+                                    buffer = File.ReadAllBytes(path2);
+                                    curfile++;
+                                    dig.BaseStream.Position = (long)(paddedSize1 + num1 + num4 + num5);
+                                    if (num7 != 0)
+                                    {
+                                        dig.BaseStream.Position += 4L;
+                                        dig.BaseStream.Position += (long)(8 * num10);
+                                        dig.Write(paddedSize2 + num8);
+                                        int length2 = buffer.Length;
+                                        dig.Write(length2);
+                                        dig.BaseStream.Position = (long)(paddedSize1 + num1 + num4 + num5 + paddedSize2 + num8);
+                                        dig.Write(buffer);
+                                        dig.WritePadding(16);
+                                        dig.Write(new byte[length1]);
+                                        size1 = length2 + length1;
+                                        if (size1 != 0 || length1 > 0)
+                                        {
+                                            num9 += BinaryUtils.GetPaddedSize(size1, 16);
+                                            num8 += BinaryUtils.GetPaddedSize(size1, 16);
+                                        }
+                                    }
+                                    else
+                                        goto label_20;
+                                }
+                                else
+                                    break;
+                            }
+                            ++num10;
+                        }
+                        else
+                            goto label_26;
+                    }
+                    int num12 = (int)MessageBox.Show("File or directory " + path2 + " not found!", "Naruto Uzumaki Chronicles Editor", MessageBoxButtons.OK, MessageBoxIcon.Hand);
+                    Main.error = true;
+                    Main.maininstance.Text = text;
+                    return;
+                label_20:
+                    dig.Write(buffer);
+                    dig.WritePadding(16);
+                    dig.Write(new byte[length1]);
+                    int num13 = size1 + length1;
+                    size1 = buffer.Length;
+                    num9 += BinaryUtils.GetPaddedSize(size1, 16);
+                label_26:
+                    dig.BaseStream.Position = (long)(paddedSize1 + num1 + 16 * index1);
+                    dig.Write(index1);
+                    if (num7 == 0)
+                    {
+                        dig.Write(size1);
+                        dig.Write(num4 + num5);
+                        num5 += num9;
+                        num3 += num9;
+                    }
+                    else
+                    {
+                        dig.Write(num9 + paddedSize2);
+                        dig.Write(num4 + num5);
+                        num5 += num9 + paddedSize2;
+                        num3 += num9 + paddedSize2;
+                    }
+                }
+                int size2 = num3 + num4;
+                dig.BaseStream.Position = (long)(16 * num2);
+                dig.Write((paddedSize1 + num1) / 2048);
+                dig.Write(size2);
+                dig.Write((short)records.SecCount);
+                dig.Write((short)0);
+                dig.Write(size2);
+                num1 += BinaryUtils.GetPaddedSize(size2, 2048, 16);
             }
-
-            dig.BaseStream.Seek(0, SeekOrigin.End);
+            dig.BaseStream.Seek(0L, SeekOrigin.End);
             dig.WritePadding(2048);
-            Main.maininstance.Text = originalText;
+            Main.maininstance.Text = text;
         }
     }
 }

@@ -18,6 +18,7 @@ using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace CFC_Digest_Editor.classes
 {
+    //TEXTURE ARRAY
     public class IMG
     {
         [DllImport("ea_swizzle.dll")]

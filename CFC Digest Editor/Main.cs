@@ -27,7 +27,10 @@ namespace CFC_Digest_Editor
         public string datafolder = "C:\\tmp\\data";
         public string nodepath;
         public string nodename;
+
         public IMG TEXmages;
+        public PAP pap;
+        public MB0 mb0;
 
         public Main()
         {
@@ -177,12 +180,12 @@ namespace CFC_Digest_Editor
                 return;
             this.nodename = e.Node.Text;
             this.nodepath = e.Node.FullPath;
-            switch (fileInfo.Extension)
-            {
-                case ".img":
-                    int num = (int)MessageBox.Show(fileInfo.Extension);
-                    break;
-            }
+            //switch (fileInfo.Extension)
+            //{
+            //    case ".img":
+            //        int num = (int)MessageBox.Show(fileInfo.Extension);
+            //        break;
+            //}
         }
 
         private async void ReadDig()
@@ -357,6 +360,10 @@ namespace CFC_Digest_Editor
 
                             imageViewer.Image = mage;
                             PropertyControl.SelectedObject = TEXmages;
+                            break;
+                        case ".mb0":
+                            mb0 = new MB0(File.ReadAllBytes(str));
+                            PropertyControl.SelectedObject = mb0;
                             break;
 
                         default:
