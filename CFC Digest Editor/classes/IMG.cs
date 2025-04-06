@@ -313,7 +313,6 @@ namespace CFC_Digest_Editor.classes
 
                         img.ReWriteIMG(str);
 
-                        //File.WriteAllBytes(str, img.RebuildIMG(tim2.Bpp));
                         MessageBox.Show($"Imported texture from:\n{opn.FileName}!", "Action");
                     }
                     return value; // Retorna o valor original (ou alterado, se necessário)
@@ -337,13 +336,27 @@ namespace CFC_Digest_Editor.classes
                     var save = new FolderBrowserDialog();
                     if (save.ShowDialog() == DialogResult.OK)
                     {
-                        Directory.CreateDirectory(save.SelectedPath + @"/" + IMG._main.nodename);
+                        DialogResult result = MessageBox.Show("Deseja salvar as imagens em formato TM2?", "Escolher Formato", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+                        bool salvarComoTm2 = result == DialogResult.Yes;
+
+                        string dir = save.SelectedPath + @"/" + Path.GetFileNameWithoutExtension(IMG._main.nodename);
+                        Directory.CreateDirectory(dir);
+                        string extensao = salvarComoTm2 ? "tm2" : "png";
+                        
+                        // Exportando as texturas
                         for (int i = 0; i < img.Images.Count; i++)
                         {
-                            File.WriteAllBytes(save.SelectedPath + @"/" + IMG._main.nodename + $"/{i}.tm2", img.GetImage(i,out var mage));
+                            int bpp = img.Images[i].Bpp;
+                            var tim = img.GetImage(i, out var mage);
+                            string caminho = Path.Combine(dir, $"{bpp}{Path.GetFileNameWithoutExtension(IMG._main.nodename)}_{i}.{extensao}");
+                            if(salvarComoTm2)
+                                File.WriteAllBytes(caminho, tim);
+                            else
+                                mage.Save(caminho, System.Drawing.Imaging.ImageFormat.Png);
                         }
 
-                        MessageBox.Show($"Exported textures to:\n{save.SelectedPath + @"/" + IMG._main.nodename}!", "Action");
+                        MessageBox.Show($"Exported textures to:\n{save.SelectedPath + @"/" + Path.GetFileNameWithoutExtension(IMG._main.nodename)}!", "Action");
                     }
                     return value; // Retorna o valor original (ou alterado, se necessário)
                 }
@@ -499,8 +512,8 @@ namespace CFC_Digest_Editor.classes
 
                 int width = entry.Width;
                 int height = entry.Height;
-                int wuznws = img.Blocks[entry.TEX_Index].Width;
-                int huznws = img.Blocks[entry.TEX_Index].Height;
+                int wuznws = entry.Width;
+                int huznws = entry.Height;
                 if (texSize < (clutOffset - texOffset))
                 {
                     entry.WithError = true;

@@ -23,45 +23,101 @@ namespace CFC_Digest_Editor.classes
         public List<byte[]> sequences;
         public List<int> seqpointers;
 
-        public class RichTextEditor : UITypeEditor
+        private string fileName;
+
+        public class ImportExportEditor : UITypeEditor
         {
             public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext context)
             {
-                return UITypeEditorEditStyle.Modal; // Abre uma janelinha
+                return UITypeEditorEditStyle.Modal;
             }
 
             public override object EditValue(ITypeDescriptorContext context, IServiceProvider provider, object value)
             {
+                if (provider?.GetService(typeof(IWindowsFormsEditorService)) is IWindowsFormsEditorService edSvc)
+                {
+                    var form = new Form
+                    {
+                        Text = "Import / Export Text",
+                        Width = 300,
+                        Height = 100,
+                        FormBorderStyle = FormBorderStyle.FixedDialog,
+                        StartPosition = FormStartPosition.CenterScreen
+                    };
+
+                    var btnImport = new Button { Text = "Import", Left = 30, Width = 100, Top = 20 };
+                    var btnExport = new Button { Text = "Export", Left = 150, Width = 100, Top = 20 };
+
+                    btnImport.Click += (sender, e) =>
+                    {
+                        var openFileDialog = new OpenFileDialog
+                        {
+                            Filter = "Plain Text Files (*.txt)|*.txt"
+                        };
+                        if (openFileDialog.ShowDialog() == DialogResult.OK)
+                        {
+                            string text = System.IO.File.ReadAllText(openFileDialog.FileName);
+                            if (context.Instance is MB0 mb0)
+                            {
+                                mb0.TextView = text;
+                            }
+                            form.Close();
+                        }
+                    };
+
+                    btnExport.Click += (sender, e) =>
+                    {
+                        var saveFileDialog = new SaveFileDialog
+                        {
+                            Filter = "Plain Text Files (*.txt)|*.txt",
+                            FileName = context.Instance is MB0 mb01 ? Path.GetFileNameWithoutExtension(mb01.fileName) + ".txt" : "exported_text.txt"
+
+                        };
+                        if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                        {
+                            if (context.Instance is MB0 mb0)
+                            {
+                                System.IO.File.WriteAllText(saveFileDialog.FileName, mb0.TextView);
+                            }
+                            form.Close();
+                        }
+                    };
+
+                    form.Controls.Add(btnImport);
+                    form.Controls.Add(btnExport);
+                    edSvc.ShowDialog(form);
+                }
+
+                return value;
+            }
+        }
+        public class RichTextEditor : UITypeEditor
+        {
+            public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext context)
+            {
+                return UITypeEditorEditStyle.DropDown; // Abre uma janelinha
+            }
+
+            public override object EditValue(ITypeDescriptorContext context, IServiceProvider provider, object value)
+            {
+
                 IWindowsFormsEditorService edSvc = provider?.GetService(typeof(IWindowsFormsEditorService)) as IWindowsFormsEditorService;
                 if (edSvc != null)
                 {
-                    using (Form form = new Form())
+                    var richTextBox = new RichTextBox()
                     {
-                        form.Text = "Editar Sequências";
-                        form.Width = 600;
-                        form.Height = 400;
+                        Dock = DockStyle.Fill,
+                        Multiline = true,
+                        WordWrap = false,
+                        ScrollBars = RichTextBoxScrollBars.Both,
+                        Font = new System.Drawing.Font("Consolas", 10),
+                        Text = value?.ToString() ?? "",
+                        Width = 300,
+                        Height = 200
+                    };
 
-                        var richTextBox = new RichTextBox()
-                        {
-                            Dock = DockStyle.Fill,
-                            Multiline = true,
-                            WordWrap = false,
-                            ScrollBars = RichTextBoxScrollBars.Both,
-                            Font = new System.Drawing.Font("Consolas", 10),
-                            Text = value?.ToString() ?? ""
-                        };
-
-                        form.Controls.Add(richTextBox);
-
-                        var btnOk = new Button() { Text = "OK", DialogResult = DialogResult.OK, Dock = DockStyle.Bottom };
-                        form.Controls.Add(btnOk);
-                        form.AcceptButton = btnOk;
-
-                        if (edSvc.ShowDialog(form) == DialogResult.OK)
-                        {
-                            return richTextBox.Text;
-                        }
-                    }
+                    edSvc.DropDownControl(richTextBox);
+                    return richTextBox.Text;
                 }
 
                 return value;
@@ -69,23 +125,26 @@ namespace CFC_Digest_Editor.classes
         }
 
         [Editor(typeof(RichTextEditor), typeof(UITypeEditor))]
-        [Category("Visualização")]
-        [DisplayName("Texto das Sequências")]
-        [Description("Texto representando as sequências, uma por linha.")]
+        [DisplayName("Text Editor")]
         public string TextView
         {
             get
             {
-                return string.Join(Environment.NewLine, GetStrings());
+                return string.Join("\r\n\r\n", GetStrings());
             }
             set
             {
-                var lines = value.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+                var lines = value.Split(new[] { "\r\n" }, StringSplitOptions.RemoveEmptyEntries);
                 sequences = lines.Select(line => Encodings.Naruto.UzumakiChronicles2.GetBytes(line)).ToList();
                 SeqCount = (uint)sequences.Count;
                 Save();
             }
         }
+
+        [Editor(typeof(ImportExportEditor), typeof(UITypeEditor))]
+        [DisplayName("Import/Export Text")]
+        [Description("Import/export sequences to .txt")]
+        public string ImportExport => "Click here to begin...";
 
         public enum Int
         {
@@ -141,9 +200,10 @@ namespace CFC_Digest_Editor.classes
         }
 
         public List<string> GetStrings() => sequences.Select(seq => Encodings.Naruto.UzumakiChronicles2.GetString(seq)).ToList();
-        public MB0(byte[] input)
+        public MB0(string path)
         {
-            Data = input;
+            fileName = path;
+            Data = System.IO.File.ReadAllBytes(fileName);
             sequences = new List<byte[]>();
             Position = 0;
             Size = (uint)Data.Length;
@@ -179,7 +239,7 @@ namespace CFC_Digest_Editor.classes
             Size = (uint)table.Count;
             Data = new byte[Size];
             Data = table.ToArray();
-
+            System.IO.File.WriteAllBytes(fileName, Data);
         }
         public int AllLength(List<byte[]> data)
         {

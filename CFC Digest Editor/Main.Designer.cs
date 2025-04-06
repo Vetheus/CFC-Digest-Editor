@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.TreeNode treeNode1 = new System.Windows.Forms.TreeNode("data");
+            System.Windows.Forms.TreeNode treeNode2 = new System.Windows.Forms.TreeNode("data");
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -165,11 +165,11 @@
             this.DigTree.ImageList = this.imageList1;
             this.DigTree.Location = new System.Drawing.Point(3, 3);
             this.DigTree.Name = "DigTree";
-            treeNode1.ImageKey = "folder";
-            treeNode1.Name = "Nó0";
-            treeNode1.Text = "data";
+            treeNode2.ImageKey = "folder";
+            treeNode2.Name = "Nó0";
+            treeNode2.Text = "data";
             this.DigTree.Nodes.AddRange(new System.Windows.Forms.TreeNode[] {
-            treeNode1});
+            treeNode2});
             this.DigTree.SelectedImageIndex = 0;
             this.DigTree.Size = new System.Drawing.Size(361, 374);
             this.DigTree.TabIndex = 0;
@@ -194,13 +194,15 @@
             this.viewLayout.Location = new System.Drawing.Point(370, 3);
             this.viewLayout.Name = "viewLayout";
             this.viewLayout.RowCount = 2;
-            this.viewLayout.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.viewLayout.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.viewLayout.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.viewLayout.Size = new System.Drawing.Size(270, 374);
             this.viewLayout.TabIndex = 1;
+            this.viewLayout.Visible = false;
             // 
             // imageViewer
             // 
+            this.imageViewer.BackColor = System.Drawing.SystemColors.ActiveCaptionText;
             this.imageViewer.Dock = System.Windows.Forms.DockStyle.Fill;
             this.imageViewer.Location = new System.Drawing.Point(3, 3);
             this.imageViewer.Name = "imageViewer";

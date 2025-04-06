@@ -283,7 +283,7 @@ namespace CFC_Digest_Editor
                     DigTree.Nodes[0].Expand();
                     openToolStripMenuItem.Enabled = false;
                     saveAsToolStripMenuItem.Enabled = true;
-
+                    saveToolStripMenuItem.Enabled = true;
                 }
            
         }
@@ -291,59 +291,80 @@ namespace CFC_Digest_Editor
 
         private void imageViewer_Click(object sender, EventArgs e)
         {
-            SaveFileDialog saveFileDialog = new SaveFileDialog();
-            saveFileDialog.Title = "Select where to save your TIM2 texture.";
-            saveFileDialog.Filter = "PS2 TIM2 Texture(*.tm2)|*.tm2";
-            if(saveFileDialog.ShowDialog() != DialogResult.OK)
-                return;
-
-            System.IO.File.WriteAllBytes(saveFileDialog.FileName, TEXmages.GetImage(Convert.ToInt32(TEXmages.Choosed), out var mage));
-            MessageBox.Show($"Exported texture to:\n{saveFileDialog.FileName}!", "Action");
+            
         }
 
         private void imageViewer_MouseClick(object sender, MouseEventArgs e)
         {
-            if (e.Button != MouseButtons.Right)
-                return;
-
-            string str = this.path + "\\" + this.nodepath;
-
-            OpenFileDialog opn = new OpenFileDialog();
-            opn.Title = "Select a TIM2 Texture to import.";
-            opn.Filter = "PS2 TIM2 Texture(*.tm2)|*.tm2";
-            if (opn.ShowDialog() == DialogResult.OK)
+            if (e.Button == MouseButtons.Right)
             {
-                var tim2 = TM2.GetClutandTex(System.IO.File.ReadAllBytes(opn.FileName));
-                int bpp = (tim2.Bpp == 5 ? 8 : 4);
-                if (tim2.Width != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width ||
-                    tim2.Height != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height ||
-                   bpp != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp 
-                   && TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Index.WithError==false)
-                {
-                    MessageBox.Show($"Texture size/Bpp mismatch!\nExpected: " +
-                        $"{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width}x{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height} - {TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp}Bpp\n" +
-                        $"Imported: {tim2.Width}x{tim2.Height} - {bpp}Bpp", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                SaveFileDialog saveFileDialog = new SaveFileDialog();
+                saveFileDialog.Title = "Select where to save your TIM2 texture.";
+                saveFileDialog.Filter = "PortableNetworkGrpahics(*.png)|*.png|PS2 TIM2 Texture(*.tm2)|*.tm2";
+                saveFileDialog.FileName = $"{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp}{Path.GetFileNameWithoutExtension(this.nodename)}_{Convert.ToInt32(TEXmages.Choosed)}";
+                if (saveFileDialog.ShowDialog() != DialogResult.OK)
                     return;
+
+                var tim = TEXmages.GetImage(Convert.ToInt32(TEXmages.Choosed), out var mage);
+                if (saveFileDialog.FilterIndex == 2)
+                    System.IO.File.WriteAllBytes(saveFileDialog.FileName, tim);
+                else
+                    mage.Save(saveFileDialog.FileName, System.Drawing.Imaging.ImageFormat.Png);
+                MessageBox.Show($"Exported texture to:\n{saveFileDialog.FileName}!", "Action");
+            }
+            else if (e.Button == MouseButtons.Left)
+            {
+                string str = this.path + "\\" + this.nodepath;
+
+                OpenFileDialog opn = new OpenFileDialog();
+                opn.Title = "Select a TIM2 Texture to import.";
+                opn.Filter = "PS2 TIM2 Texture(*.tm2)|*.tm2";
+                if (opn.ShowDialog() == DialogResult.OK)
+                {
+                    var tim2 = TM2.GetClutandTex(System.IO.File.ReadAllBytes(opn.FileName));
+                    int bpp = (tim2.Bpp == 5 ? 8 : 4);
+                    if (tim2.Width != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width ||
+                        tim2.Height != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height ||
+                       bpp != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp
+                       && TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Index.WithError == false)
+                    {
+                        MessageBox.Show($"Texture size/Bpp mismatch!\nExpected: " +
+                            $"{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width}x{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height} - {TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp}Bpp\n" +
+                            $"Imported: {tim2.Width}x{tim2.Height} - {bpp}Bpp", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    var values = TEXmages.GetPixelandColorData(System.IO.File.ReadAllBytes(opn.FileName), Convert.ToInt32(TEXmages.Choosed), true);
+                    TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].TEX = values[0];
+                    TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].CLUT = values[1];
+                    TEXmages.GetImage(Convert.ToInt32(TEXmages.Choosed), out System.Drawing.Image mage);
+                    IMG._main.imageViewer.Image = mage;
+
+                    TEXmages.ReWriteIMG(str);
+                    //File.WriteAllBytes(str,TEXmages.RebuildIMG(tim2.Bpp));
+
+                    MessageBox.Show($"Imported texture from:\n{opn.FileName}!", "Action");
                 }
-                var values = TEXmages.GetPixelandColorData(System.IO.File.ReadAllBytes(opn.FileName), Convert.ToInt32(TEXmages.Choosed), true);
-                TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].TEX = values[0];
-                TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].CLUT = values[1];
-                TEXmages.GetImage(Convert.ToInt32(TEXmages.Choosed), out System.Drawing.Image mage);
-                IMG._main.imageViewer.Image = mage;
-
-                TEXmages.ReWriteIMG(str);
-                //File.WriteAllBytes(str,TEXmages.RebuildIMG(tim2.Bpp));
-
-                MessageBox.Show($"Imported texture from:\n{opn.FileName}!", "Action");
             }
         }
 
         private void PropertyControl_PropertyValueChanged(object s, PropertyValueChangedEventArgs e)
         {
-            PropertyControl.Update();
+            PropertyControl.Refresh();
+        }
+        private void CleanProps()
+        {
+            PropertyControl.SelectedObject = null;
+            imageViewer.Image = null;
+            imageViewer.Visible = false;
+            // Linha 0 com altura absoluta de 50 pixels
+            viewLayout.RowStyles[0].SizeType = SizeType.Absolute;
+            viewLayout.RowStyles[0].Height = 0;
+            // Linha 1 com 70% do espaço restante
+            viewLayout.RowStyles[1].SizeType = SizeType.Percent;
+            viewLayout.RowStyles[1].Height = 100;
         }
 
-        private void DigTree_AfterSelect(object sender, TreeViewEventArgs e)
+        private  void DigTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
             switch (e.Node.Tag.ToString())
             {
@@ -352,9 +373,20 @@ namespace CFC_Digest_Editor
                     this.nodepath = e.Node.FullPath;
                     FileInfo fileInfo = new FileInfo(e.Node.FullPath);
                     string str = this.path + "\\" + this.nodepath;
+                    viewLayout.Visible = true;
                     switch (fileInfo.Extension)
                     {
                         case ".img":
+                            CleanProps();
+
+                            imageViewer.Visible = true;
+                            // Linha 0 com altura absoluta de 50 pixels
+                            viewLayout.RowStyles[0].SizeType = SizeType.Percent;
+                            viewLayout.RowStyles[0].Height = 50;
+
+                            // Linha 1 com 70% do espaço restante
+                            viewLayout.RowStyles[1].SizeType = SizeType.Percent;
+                            viewLayout.RowStyles[1].Height = 50;
                             TEXmages = new IMG(this).Read(File.ReadAllBytes(str), imageViewer);
                             TEXmages.GetImage(0, out var mage);
 
@@ -362,14 +394,27 @@ namespace CFC_Digest_Editor
                             PropertyControl.SelectedObject = TEXmages;
                             break;
                         case ".mb0":
-                            mb0 = new MB0(File.ReadAllBytes(str));
+                            CleanProps();
+                            mb0 = new MB0(str);
                             PropertyControl.SelectedObject = mb0;
+                            imageViewer.Visible = false;
+
+                            // Linha 0 com altura absoluta de 50 pixels
+                            viewLayout.RowStyles[0].SizeType = SizeType.Absolute;
+                            viewLayout.RowStyles[0].Height = 0;
+
+                            // Linha 1 com 70% do espaço restante
+                            viewLayout.RowStyles[1].SizeType = SizeType.Percent;
+                            viewLayout.RowStyles[1].Height = 100;
                             break;
 
                         default:
-
+                            CleanProps();
                             break;
                     }
+                    break;
+                default:
+                    viewLayout.Visible = false;
                     break;
             }
         }
