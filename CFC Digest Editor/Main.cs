@@ -16,6 +16,7 @@ using CFC_Digest_Editor.classes;
 
 namespace CFC_Digest_Editor
 {
+
     public partial class Main : Form
     {
         public string DigPath, FatPath;
@@ -34,18 +35,18 @@ namespace CFC_Digest_Editor
 
         public Main()
         {
-            InitializeComponent(); 
+            InitializeComponent();
             maininstance = this;
             DigTree.Nodes[0].Tag = (object)"nothing";
         }
 
-        private void exitToolStripMenuItem_Click(object sender, EventArgs e) 
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
             => Application.Exit();
 
         private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
             => new AboutBox1(this).ShowDialog();
 
-        private void ShowHide(Control[] controls) => 
+        private void ShowHide(Control[] controls) =>
             Array.ForEach(controls, c => c.Visible = !c.Visible);
         private static void CloneDirectory(string root, string dest)
         {
@@ -195,103 +196,103 @@ namespace CFC_Digest_Editor
             if (openFileDialog1.ShowDialog() != DialogResult.OK)
                 return;
 
-            
-                DigPath = openFileDialog1.FileName;
-                DIG.PakCount = 0;
+
+            DigPath = openFileDialog1.FileName;
+            DIG.PakCount = 0;
 
 
-                using (BinaryReader binaryReader1 = new BinaryReader((Stream)File.Open(DigPath, FileMode.Open, FileAccess.Read, FileShare.Read)))
+            using (BinaryReader binaryReader1 = new BinaryReader((Stream)File.Open(DigPath, FileMode.Open, FileAccess.Read, FileShare.Read)))
+            {
+                binaryReader1.BaseStream.Position = 0x10;
+
+                List<Package> packageList = new List<Package>();
+                while (true)
                 {
-                    binaryReader1.BaseStream.Position = 0x10;
-
-                    List<Package> packageList = new List<Package>();
-                    while (true)
+                    Package package = new Package(binaryReader1);
+                    if (package.Offset != 0)
                     {
-                        Package package = new Package(binaryReader1);
-                        if (package.Offset != 0)
-                        {
-                            packageList.Add(package);
-                            ++DIG.PakCount;
-                        }
-                        else
-                            break;
+                        packageList.Add(package);
+                        ++DIG.PakCount;
                     }
-                    OpenFileDialog openFileDialog2 = new OpenFileDialog();
-                    openFileDialog2.Filter = "CFC.FAT file (*.FAT) | *.FAT";
-                
-                    if (openFileDialog2.ShowDialog() != DialogResult.OK)
+                    else
+                        break;
+                }
+                OpenFileDialog openFileDialog2 = new OpenFileDialog();
+                openFileDialog2.Filter = "CFC.FAT file (*.FAT) | *.FAT";
+
+                if (openFileDialog2.ShowDialog() != DialogResult.OK)
+                {
+                    if (MessageBox.Show("The app needs a CFC.FAT in order to organize the files, do you want to create it? (Select no if you already have it)", "Naruto Uzumaki Chronicles Editor", MessageBoxButtons.YesNo) == DialogResult.Yes)
                     {
-                        if (MessageBox.Show("The app needs a CFC.FAT in order to organize the files, do you want to create it? (Select no if you already have it)", "Naruto Uzumaki Chronicles Editor", MessageBoxButtons.YesNo) == DialogResult.Yes)
+                        SaveFileDialog saveFileDialog = new SaveFileDialog();
+                        saveFileDialog.Filter = "FAT File |*.FAT";
+                        if (saveFileDialog.ShowDialog() != DialogResult.OK && saveFileDialog.ShowDialog() != DialogResult.OK)
+                            return;
+                        using (BinaryWriter binaryWriter = new BinaryWriter((Stream)File.Open(saveFileDialog.FileName, FileMode.Create, FileAccess.Write, FileShare.Read)))
                         {
-                            SaveFileDialog saveFileDialog = new SaveFileDialog();
-                            saveFileDialog.Filter = "FAT File |*.FAT";
-                            if (saveFileDialog.ShowDialog() != DialogResult.OK && saveFileDialog.ShowDialog() != DialogResult.OK)
-                                return;
-                            using (BinaryWriter binaryWriter = new BinaryWriter((Stream)File.Open(saveFileDialog.FileName, FileMode.Create, FileAccess.Write, FileShare.Read)))
+                            FAT.BuildFAT(binaryReader1, binaryWriter, packageList);
+                            if (Main.error)
                             {
-                                FAT.BuildFAT(binaryReader1, binaryWriter, packageList);
-                                if (Main.error)
-                                {
-                                    binaryWriter.Close();
-                                    File.Delete(saveFileDialog.FileName);
-                                    return;
-                                }
-                                binaryWriter.BaseStream.Seek(0L, SeekOrigin.End);
-                                binaryWriter.WritePadding(16);
-                                int position1 = (int)binaryWriter.BaseStream.Position;
-                                binaryWriter.Write(new byte[16]);
-                                int position2 = (int)binaryWriter.BaseStream.Position;
-                                binaryWriter.Write(new byte[16]);
-                                binaryWriter.BaseStream.Position = 0;
-                                binaryWriter.Write(position1);
-                                binaryWriter.Write(position2);
-                                int num = (int)MessageBox.Show("Success! All packages have been recorded within " + Path.GetFileName(saveFileDialog.FileName) + ".", "Naruto Uzumaki Chronicles Editor");
-                                FatPath = saveFileDialog.FileName;
-                            }
-                        }
-                        else
-                        {
-                            if (openFileDialog2.ShowDialog() != DialogResult.OK)
+                                binaryWriter.Close();
+                                File.Delete(saveFileDialog.FileName);
                                 return;
-                            FatPath = openFileDialog2.FileName;
+                            }
+                            binaryWriter.BaseStream.Seek(0L, SeekOrigin.End);
+                            binaryWriter.WritePadding(16);
+                            int position1 = (int)binaryWriter.BaseStream.Position;
+                            binaryWriter.Write(new byte[16]);
+                            int position2 = (int)binaryWriter.BaseStream.Position;
+                            binaryWriter.Write(new byte[16]);
+                            binaryWriter.BaseStream.Position = 0;
+                            binaryWriter.Write(position1);
+                            binaryWriter.Write(position2);
+                            int num = (int)MessageBox.Show("Success! All packages have been recorded within " + Path.GetFileName(saveFileDialog.FileName) + ".", "Naruto Uzumaki Chronicles Editor");
+                            FatPath = saveFileDialog.FileName;
                         }
                     }
                     else
-                        FatPath = openFileDialog2.FileName;
-                    if (Directory.Exists(this.path))
-                        Directory.Delete(this.path, true);
-                    using (BinaryReader binaryReader2 = new BinaryReader((Stream)File.Open(FatPath, FileMode.Open, FileAccess.Read, FileShare.Read)))
                     {
-                        List<Records> RecordsList = new List<Records>();
-                        Records.CurrentTbl = 32;
-                        for (int index = 0; index < DIG.PakCount; ++index)
-                        {
-                            Records records = new Records(binaryReader2);
-                            RecordsList.Add(records);
-                            Records.CurrentTbl += 24;
-                        }
+                        if (openFileDialog2.ShowDialog() != DialogResult.OK)
+                            return;
+                        FatPath = openFileDialog2.FileName;
+                    }
+                }
+                else
+                    FatPath = openFileDialog2.FileName;
+                if (Directory.Exists(this.path))
+                    Directory.Delete(this.path, true);
+                using (BinaryReader binaryReader2 = new BinaryReader((Stream)File.Open(FatPath, FileMode.Open, FileAccess.Read, FileShare.Read)))
+                {
+                    List<Records> RecordsList = new List<Records>();
+                    Records.CurrentTbl = 32;
+                    for (int index = 0; index < DIG.PakCount; ++index)
+                    {
+                        Records records = new Records(binaryReader2);
+                        RecordsList.Add(records);
+                        Records.CurrentTbl += 24;
+                    }
                     //await Task.Run(() =>
                     //{
-                        DIG.Unpack(binaryReader1, binaryReader2, this.path, packageList, RecordsList);
+                    DIG.Unpack(binaryReader1, binaryReader2, this.path, packageList, RecordsList);
                     //});
                 }
-                    ShowHide(new Control[1] { MainLayout });
+                ShowHide(new Control[1] { MainLayout });
 
-                    DirectoryInfo directory = new DirectoryInfo(this.path + "\\data");
-                    DigTree.Nodes[0].Tag = (object)"folder";
-                    PopulateNodes.Populate(this.DigTree.Nodes[0], directory);
-                    DigTree.Nodes[0].Expand();
-                    openToolStripMenuItem.Enabled = false;
-                    saveAsToolStripMenuItem.Enabled = true;
-                    saveToolStripMenuItem.Enabled = true;
-                }
-           
+                DirectoryInfo directory = new DirectoryInfo(this.path + "\\data");
+                DigTree.Nodes[0].Tag = (object)"folder";
+                PopulateNodes.Populate(this.DigTree.Nodes[0], directory);
+                DigTree.Nodes[0].Expand();
+                openToolStripMenuItem.Enabled = false;
+                saveAsToolStripMenuItem.Enabled = true;
+                saveToolStripMenuItem.Enabled = true;
+            }
+
         }
         private void openToolStripMenuItem_Click(object sender, EventArgs e) => ReadDig();
 
         private void imageViewer_Click(object sender, EventArgs e)
         {
-            
+
         }
 
         private void imageViewer_MouseClick(object sender, MouseEventArgs e)
@@ -364,7 +365,24 @@ namespace CFC_Digest_Editor
             viewLayout.RowStyles[1].Height = 100;
         }
 
-        private  void DigTree_AfterSelect(object sender, TreeViewEventArgs e)
+        private void dSIExtractorToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void dSICompilerToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+        public void RefreshPropertyGrid()
+        {
+            var obj = PropertyControl.SelectedObject;
+            PropertyControl.SelectedObject = null;
+            PropertyControl.SelectedObject = obj;
+            
+        }
+
+        private void DigTree_AfterSelect(object sender, TreeViewEventArgs e)
         {
             switch (e.Node.Tag.ToString())
             {
@@ -407,7 +425,11 @@ namespace CFC_Digest_Editor
                             viewLayout.RowStyles[1].SizeType = SizeType.Percent;
                             viewLayout.RowStyles[1].Height = 100;
                             break;
-
+                        case ".pap":
+                            CleanProps();
+                            pap = new PAP(str, this);
+                            PropertyControl.SelectedObject = pap;
+                            break;
                         default:
                             CleanProps();
                             break;
@@ -418,5 +440,24 @@ namespace CFC_Digest_Editor
                     break;
             }
         }
+        public void ExpandAll(PropertyGrid propertyGrid)
+        {
+            if (propertyGrid == null) return;
+
+            var gridViewField = propertyGrid.GetType().GetField("gridView",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+
+            if (gridViewField != null)
+            {
+                var gridView = gridViewField.GetValue(propertyGrid);
+                if (gridView != null)
+                {
+                    var method = gridView.GetType().GetMethod("ExpandAllGridItems",
+                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    method?.Invoke(gridView, null);
+                }
+            }
+        }
     }
-}
+    
+    }

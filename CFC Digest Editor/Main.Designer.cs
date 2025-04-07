@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.Windows.Forms.TreeNode treeNode2 = new System.Windows.Forms.TreeNode("data");
+            System.Windows.Forms.TreeNode treeNode1 = new System.Windows.Forms.TreeNode("data");
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Main));
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -39,6 +39,8 @@
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.editToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.dSIExtractorToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.dSICompilerToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.MainLayout = new System.Windows.Forms.TableLayoutPanel();
             this.SubLayout = new System.Windows.Forms.TableLayoutPanel();
             this.DigTree = new System.Windows.Forms.TreeView();
@@ -124,9 +126,26 @@
             // 
             // editToolStripMenuItem
             // 
+            this.editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.dSIExtractorToolStripMenuItem,
+            this.dSICompilerToolStripMenuItem});
             this.editToolStripMenuItem.Name = "editToolStripMenuItem";
             this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
             this.editToolStripMenuItem.Text = "Edit";
+            // 
+            // dSIExtractorToolStripMenuItem
+            // 
+            this.dSIExtractorToolStripMenuItem.Name = "dSIExtractorToolStripMenuItem";
+            this.dSIExtractorToolStripMenuItem.Size = new System.Drawing.Size(143, 22);
+            this.dSIExtractorToolStripMenuItem.Text = "DSI Extractor";
+            this.dSIExtractorToolStripMenuItem.Click += new System.EventHandler(this.dSIExtractorToolStripMenuItem_Click);
+            // 
+            // dSICompilerToolStripMenuItem
+            // 
+            this.dSICompilerToolStripMenuItem.Name = "dSICompilerToolStripMenuItem";
+            this.dSICompilerToolStripMenuItem.Size = new System.Drawing.Size(143, 22);
+            this.dSICompilerToolStripMenuItem.Text = "DSI Compiler";
+            this.dSICompilerToolStripMenuItem.Click += new System.EventHandler(this.dSICompilerToolStripMenuItem_Click);
             // 
             // MainLayout
             // 
@@ -165,11 +184,11 @@
             this.DigTree.ImageList = this.imageList1;
             this.DigTree.Location = new System.Drawing.Point(3, 3);
             this.DigTree.Name = "DigTree";
-            treeNode2.ImageKey = "folder";
-            treeNode2.Name = "Nó0";
-            treeNode2.Text = "data";
+            treeNode1.ImageKey = "folder";
+            treeNode1.Name = "Nó0";
+            treeNode1.Text = "data";
             this.DigTree.Nodes.AddRange(new System.Windows.Forms.TreeNode[] {
-            treeNode2});
+            treeNode1});
             this.DigTree.SelectedImageIndex = 0;
             this.DigTree.Size = new System.Drawing.Size(361, 374);
             this.DigTree.TabIndex = 0;
@@ -312,6 +331,8 @@
         private System.Windows.Forms.ToolStripMenuItem importToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem extractFileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem importFileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem dSIExtractorToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem dSICompilerToolStripMenuItem;
     }
 }
 

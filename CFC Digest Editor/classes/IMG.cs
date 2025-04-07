@@ -13,6 +13,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static CFC_Digest_Editor.classes.PAP;
 using static IOextent;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
@@ -730,9 +731,26 @@ namespace CFC_Digest_Editor.classes
             var list = new List<byte[]>();
             var tim = TM2.GetClutandTex(input);
 
-            byte[] swizzled = swizzle ? (tim.Bpp == 4 ? ConvertPS2EA4bit(tim.TEX, Images[index].Wunswizz, Images[index].Hunswizz, 4, true) : Swizzle8(tim.Width, tim.Height, tim.TEX)) : tim.TEX;
+            byte[] swizzled = swizzle ? (tim.Bpp == 4 ? ConvertPS2EA4bit(tim.TEX, Images[index].Wunswizz, Images[index].Hunswizz, 4, true) :
+                Swizzle8(tim.Width, tim.Height, tim.TEX)) : tim.TEX;
             list.Add(swizzled);
-            list.Add(tim.CLUT);
+            int pos = 0;
+            byte r, g, b, a;
+            var pal = new List<Color>();
+
+            while (pos < tim.CLUT.Length)
+            {
+                r = tim.CLUT[pos];
+                g = tim.CLUT[pos + 1];
+                b = tim.CLUT[pos + 2];
+                a = tim.CLUT[pos + 3];
+
+                pal.Add(Color.FromArgb(a, r, g, b));
+                pos += 4;
+            }
+            Color[] cores = pal.ToArray();
+
+            list.Add(ColorsToByteArray(cores, tim.Bpp == 4 ? 4 : 8));
             return list;
         }
         #region Swizzlers/Unswizzlers

@@ -86,12 +86,7 @@ namespace CFC_Digest_Editor
                     size /= 2;
                 tim2.TEX = reader.ReadBytes(size);
                 tim2.CLUT = reader.ReadBytes(tim2.Bpp == 4 ? 0x40 : 0x400);
-                int pos = 0;
-                while (pos < tim2.CLUT.Length)
-                {
-                    tim2.CLUT[pos+3] = (byte)(tim2.CLUT[pos + 3] & 0x80);
-                    pos += 4;
-                }
+                
 
                 return tim2;
             }
