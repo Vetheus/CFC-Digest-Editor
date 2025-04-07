@@ -6,6 +6,11 @@ using System.Text;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Drawing;
+using System.Drawing.Design;
+using System.Windows.Forms.Design;
+using System.Windows.Forms;
+using NUC_Raw_Tools.ArquivoRAW;
 
 namespace CFC_Digest_Editor.classes
 {
@@ -14,6 +19,7 @@ namespace CFC_Digest_Editor.classes
     public class PAP
     {
         private string FileName;
+        private IMG RefImage;
 
         //Calling order: Block 2 > Block 3 > Block 1 > Block 4
 
@@ -466,6 +472,36 @@ namespace CFC_Digest_Editor.classes
                 return new StandardValuesCollection(Data);
             }
         }
+        public class ShortEditor : UITypeEditor
+        {
+            public override UITypeEditorEditStyle GetEditStyle(ITypeDescriptorContext context)
+            {
+                return UITypeEditorEditStyle.DropDown;
+            }
+
+            public override object EditValue(ITypeDescriptorContext context, IServiceProvider provider, object value)
+            {
+                IWindowsFormsEditorService editorService =
+                    (IWindowsFormsEditorService)provider.GetService(typeof(IWindowsFormsEditorService));
+
+                if (editorService != null)
+                {
+                    NumericUpDown nud = new NumericUpDown
+                    {
+                        Minimum = short.MinValue,
+                        Maximum = short.MaxValue,
+                        Value = Convert.ToDecimal(value),
+                        DecimalPlaces = 0,
+                        BorderStyle = BorderStyle.None
+                    };
+
+                    editorService.DropDownControl(nud);
+                    return Convert.ToInt16(nud.Value);
+                }
+
+                return value;
+            }
+        }
 
         // Campos internos
         public string Choosed = "0";
@@ -528,6 +564,7 @@ namespace CFC_Digest_Editor.classes
             get => SelectedCropIndex.ToString();
             set
             {
+
                 SelectedCropIndex = Convert.ToInt32(value);
                 if (select_Crop != null && SelectedCropIndex < select_Crop.Length)
                 {
@@ -552,14 +589,167 @@ namespace CFC_Digest_Editor.classes
                         Angle_Rotation = selected.Angle_Rotation,
                         Unknow2 = selected.Unknow2
                     };
+                    if(!_main.pap_editor.Visible)
+                        _main.pap_editor.Show();
+
+                    RenderCropCanvas(selected);
                 }
             }
         }
+        private bool isDragging = false;
+        private bool isResizing = false;
+        private Point dragOffset;
+        private const int resizeMargin = 6;
+        private int? _lastTexID = null;
+        private Bitmap _lastBaseImage = null;
+        public Rectangle cropTangle = default;
+
+        public void InitializeViewerEvents()
+        {
+            var viewer = _main.pap_editor.BaseViewer;
+
+            viewer.MouseDown -= BaseViewer_MouseDown;
+            viewer.MouseMove -= BaseViewer_MouseMove;
+            viewer.MouseUp -= BaseViewer_MouseUp;
+            viewer.Paint -= BaseViewer_Paint;
+
+            viewer.MouseDown += BaseViewer_MouseDown;
+            viewer.MouseMove += BaseViewer_MouseMove;
+            viewer.MouseUp += BaseViewer_MouseUp;
+            viewer.Paint += BaseViewer_Paint;
+            viewer.Cursor = Cursors.Cross;
+
+            EnableDoubleBuffering(viewer);
+        }
+
+        private void EnableDoubleBuffering(Control c)
+        {
+            typeof(Control).InvokeMember("DoubleBuffered",
+                System.Reflection.BindingFlags.SetProperty | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
+                null, c, new object[] { true });
+        }
+
+        private bool IsOnEdge(Point mouse, Rectangle rect) =>
+            Math.Abs(mouse.X - (rect.X + rect.Width)) < resizeMargin &&
+            Math.Abs(mouse.Y - (rect.Y + rect.Height)) < resizeMargin;
+
+        private void BaseViewer_Paint(object sender, PaintEventArgs e)
+        {
+            if (cropTangle != default)
+                using (Pen pen = new Pen(Color.Red, 2))
+                    e.Graphics.DrawRectangle(pen, cropTangle);
+        }
+
+        private void BaseViewer_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (IsOnEdge(e.Location, cropTangle))
+            {
+                isResizing = true;
+            }
+            else if (cropTangle.Contains(e.Location))
+            {
+                isDragging = true;
+                dragOffset = new Point(e.X - cropTangle.X, e.Y - cropTangle.Y);
+            }
+        }
+
+        private void BaseViewer_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (isDragging)
+            {
+                cropTangle.X = e.X - dragOffset.X;
+                cropTangle.Y = e.Y - dragOffset.Y;
+                _main.pap_editor.BaseViewer.Invalidate();
+            }
+            else if (isResizing)
+            {
+                cropTangle.Width = Math.Max(1, e.X - cropTangle.X);
+                cropTangle.Height = Math.Max(1, e.Y - cropTangle.Y);
+                _main.pap_editor.BaseViewer.Invalidate();
+            }
+            else
+            {
+                var viewer = _main.pap_editor.BaseViewer;
+                if (IsOnEdge(e.Location, cropTangle))
+                    viewer.Cursor = Cursors.SizeNWSE;
+                else if (cropTangle.Contains(e.Location))
+                    viewer.Cursor = Cursors.SizeAll;
+                else
+                    viewer.Cursor = Cursors.Cross;
+            }
+        }
+
+        private void BaseViewer_MouseUp(object sender, MouseEventArgs e)
+        {
+            isDragging = false;
+            isResizing = false;
+            if (_previewCrop != null)
+            {
+                _previewCrop.X = (short)cropTangle.X;
+                _previewCrop.Y = (short)cropTangle.Y;
+                _previewCrop.Tex_Width = (short)cropTangle.Width;
+                _previewCrop.Tex_Height = (short)cropTangle.Height;
+
+                UpdateCropCanvas(_previewCrop);
+                _main.PropertyControl.Refresh();
+            }
+        }
+
+        private void UpdateCropCanvas(Crop selected)
+        {
+            if (_lastBaseImage == null) return;
+
+            Rectangle rect = new Rectangle(selected.X, selected.Y, selected.Tex_Width, selected.Tex_Height);
+            Bitmap clone = _lastBaseImage.Clone(rect, _lastBaseImage.PixelFormat);
+            Bitmap canvas = new Bitmap(512, 448); // PS2 Game res
+
+            int centerX = canvas.Width / 2;
+            int centerY = canvas.Height / 2;
+
+            int pixelX = centerX + selected.Tex_X;
+            int pixelY = centerY - selected.Tex_Y;
+
+            using (Graphics g = Graphics.FromImage(canvas))
+            {
+                g.Clear(Color.Transparent);
+                g.DrawImage(clone, pixelX, pixelY);
+            }
+
+            _main.pap_editor.CropBox.Image?.Dispose();
+            _main.pap_editor.CropBox.Image = canvas;
+            _main.pap_editor.CropBox.Refresh(); // Força atualização imediata
+        }
+
+        public void RenderCropCanvas(Crop selected)
+        {
+            if (selected == null)
+                return;
+
+            _previewCrop = selected;
+
+            InitializeViewerEvents();
+
+            if (_lastTexID != selected.TexID || _lastBaseImage == null)
+            {
+                RefImage.GetImage(selected.TexID, out var mage);
+                _lastBaseImage?.Dispose();
+                _lastBaseImage = new Bitmap(mage);
+                _lastTexID = selected.TexID;
+                _main.pap_editor.BaseViewer.Image = _lastBaseImage;
+            }
+
+            cropTangle = new Rectangle(selected.X, selected.Y, selected.Tex_Width, selected.Tex_Height);
+            _main.pap_editor.BaseViewer.Invalidate();
+
+            UpdateCropCanvas(selected);
+        }
+
 
         // --- Crop Preview Properties ---
 
         [Category("Crop Preview")]
         [DisplayName("A - Texture ID")]
+
         public short Preview_Texture_ID
         {
             get => _previewCrop.TexID;
@@ -576,6 +766,7 @@ namespace CFC_Digest_Editor.classes
 
         [Category("Crop Preview")]
         [DisplayName("C - Texture X")]
+        [Editor(typeof(ShortEditor), typeof(UITypeEditor))]
         public short Preview_Texture_X
         {
             get => _previewCrop.Tex_X;
@@ -584,6 +775,7 @@ namespace CFC_Digest_Editor.classes
 
         [Category("Crop Preview")]
         [DisplayName("D - Texture Y")]
+        [Editor(typeof(ShortEditor), typeof(UITypeEditor))]
         public short Preview_Texture_Y
         {
             get => _previewCrop.Tex_Y;
@@ -592,6 +784,7 @@ namespace CFC_Digest_Editor.classes
 
         [Category("Crop Preview")]
         [DisplayName("E - Crop X")]
+        [Editor(typeof(ShortEditor), typeof(UITypeEditor))]
         public short Preview_Crop_X
         {
             get => _previewCrop.X;
@@ -600,6 +793,7 @@ namespace CFC_Digest_Editor.classes
 
         [Category("Crop Preview")]
         [DisplayName("F - Crop Y")]
+        [Editor(typeof(ShortEditor), typeof(UITypeEditor))]
         public short Preview_Crop_Y
         {
             get => _previewCrop.Y;
@@ -608,6 +802,7 @@ namespace CFC_Digest_Editor.classes
 
         [Category("Crop Preview")]
         [DisplayName("G - Texture Width")]
+        [Editor(typeof(ShortEditor), typeof(UITypeEditor))]
         public short Preview_Texture_Width
         {
             get => _previewCrop.Tex_Width;
@@ -616,6 +811,7 @@ namespace CFC_Digest_Editor.classes
 
         [Category("Crop Preview")]
         [DisplayName("H - Texture Height")]
+        [Editor(typeof(ShortEditor), typeof(UITypeEditor))]
         public short Preview_Texture_Height
         {
             get => _previewCrop.Tex_Height;
@@ -624,6 +820,7 @@ namespace CFC_Digest_Editor.classes
 
         [Category("Crop Preview")]
         [DisplayName("I - Resize Width")]
+        [Editor(typeof(ShortEditor), typeof(UITypeEditor))]
         public short Preview_Resize_Width
         {
             get => _previewCrop.Resize_Width;
@@ -632,6 +829,7 @@ namespace CFC_Digest_Editor.classes
 
         [Category("Crop Preview")]
         [DisplayName("J - Resize Height")]
+        [Editor(typeof(ShortEditor), typeof(UITypeEditor))]
         public short Preview_Resize_Height
         {
             get => _previewCrop.Resize_Height;
@@ -689,6 +887,7 @@ namespace CFC_Digest_Editor.classes
         // --- Método para refletir alterações no array original ---
         private void UpdateOriginalCrop()
         {
+            var selected = _previewCrop;
             if (select_Crop != null && SelectedCropIndex < select_Crop.Length)
             {
                 int indexInOriginal = Array.IndexOf(Crops, select_Crop[SelectedCropIndex]);
@@ -697,14 +896,16 @@ namespace CFC_Digest_Editor.classes
                     Crops[indexInOriginal] = _previewCrop;
                     select_Crop[SelectedCropIndex] = _previewCrop;
                 }
+                RenderCropCanvas(selected);
             }
         }
-
-
 
         public static Main _main;
         public PAP(string Filename, Main main)
         {
+            RefImage = new IMG(main).Read(File.ReadAllBytes(Filename.Substring(0, Filename.Length - 3) + "img"),
+                main.pap_editor.BaseViewer);
+
             _main = main;
             FileName = Filename;
             byte[] data = File.ReadAllBytes(Filename);

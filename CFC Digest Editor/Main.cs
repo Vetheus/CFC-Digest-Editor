@@ -32,6 +32,7 @@ namespace CFC_Digest_Editor
         public IMG TEXmages;
         public PAP pap;
         public MB0 mb0;
+        public PAP_Viewer pap_editor = new PAP_Viewer();
 
         public Main()
         {
@@ -354,6 +355,13 @@ namespace CFC_Digest_Editor
         }
         private void CleanProps()
         {
+            if (pap_editor.Visible)
+            {
+                pap_editor.Close();
+                pap_editor.BaseViewer.Image = null;
+                pap_editor.CropBox.Image = null;
+            }
+
             PropertyControl.SelectedObject = null;
             imageViewer.Image = null;
             imageViewer.Visible = false;
@@ -440,24 +448,6 @@ namespace CFC_Digest_Editor
                     break;
             }
         }
-        public void ExpandAll(PropertyGrid propertyGrid)
-        {
-            if (propertyGrid == null) return;
-
-            var gridViewField = propertyGrid.GetType().GetField("gridView",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-            if (gridViewField != null)
-            {
-                var gridView = gridViewField.GetValue(propertyGrid);
-                if (gridView != null)
-                {
-                    var method = gridView.GetType().GetMethod("ExpandAllGridItems",
-                        System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    method?.Invoke(gridView, null);
-                }
-            }
-        }
     }
     
-    }
+}
