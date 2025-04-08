@@ -22,6 +22,7 @@ namespace CFC_Digest_Editor.classes
     //TEXTURE ARRAY
     public class IMG
     {
+        public System.Windows.Forms.Button btnImport = new System.Windows.Forms.Button(), btnExport = new System.Windows.Forms.Button();
         [DllImport("ea_swizzle.dll")]
         private static extern void swizzle4(byte[] input, byte[] output, int width, int height);
 
@@ -480,6 +481,7 @@ namespace CFC_Digest_Editor.classes
         public IMG Read(byte[] input, PictureBox pictureBox)
         {
             var img = new IMG(_main);
+
             img.Count = (int)input.ReadUInt(0, 32);
             img.Data_Count = (int)input.ReadUInt(4, 32);
             

@@ -20,6 +20,7 @@ namespace CFC_Digest_Editor.classes
     {
         private string FileName;
         private IMG RefImage;
+        public Button button = new Button();
 
         //Calling order: Block 2 > Block 3 > Block 1 > Block 4
 
@@ -596,6 +597,21 @@ namespace CFC_Digest_Editor.classes
                 }
             }
         }
+        private enum ResizeDirection { None, Right, Bottom, BottomRight }
+        private ResizeDirection resizeDirection = ResizeDirection.None;
+
+        private ResizeDirection GetResizeDirection(Point mouse, Rectangle rect)
+        {
+            bool nearRight = Math.Abs(mouse.X - (rect.Right)) <= resizeMargin;
+            bool nearBottom = Math.Abs(mouse.Y - (rect.Bottom)) <= resizeMargin;
+
+            if (nearRight && nearBottom) return ResizeDirection.BottomRight;
+            if (nearRight) return ResizeDirection.Right;
+            if (nearBottom) return ResizeDirection.Bottom;
+
+            return ResizeDirection.None;
+        }
+
         private bool isDragging = false;
         private bool isResizing = false;
         private Point dragOffset;
@@ -642,7 +658,8 @@ namespace CFC_Digest_Editor.classes
 
         private void BaseViewer_MouseDown(object sender, MouseEventArgs e)
         {
-            if (IsOnEdge(e.Location, cropTangle))
+            resizeDirection = GetResizeDirection(e.Location, cropTangle);
+            if (resizeDirection != ResizeDirection.None)
             {
                 isResizing = true;
             }
@@ -655,27 +672,49 @@ namespace CFC_Digest_Editor.classes
 
         private void BaseViewer_MouseMove(object sender, MouseEventArgs e)
         {
+            var viewer = _main.pap_editor.BaseViewer;
+
             if (isDragging)
             {
                 cropTangle.X = e.X - dragOffset.X;
                 cropTangle.Y = e.Y - dragOffset.Y;
-                _main.pap_editor.BaseViewer.Invalidate();
+                viewer.Invalidate();
             }
             else if (isResizing)
             {
-                cropTangle.Width = Math.Max(1, e.X - cropTangle.X);
-                cropTangle.Height = Math.Max(1, e.Y - cropTangle.Y);
-                _main.pap_editor.BaseViewer.Invalidate();
+                switch (resizeDirection)
+                {
+                    case ResizeDirection.Right:
+                        cropTangle.Width = Math.Max(1, e.X - cropTangle.X);
+                        break;
+                    case ResizeDirection.Bottom:
+                        cropTangle.Height = Math.Max(1, e.Y - cropTangle.Y);
+                        break;
+                    case ResizeDirection.BottomRight:
+                        cropTangle.Width = Math.Max(1, e.X - cropTangle.X);
+                        cropTangle.Height = Math.Max(1, e.Y - cropTangle.Y);
+                        break;
+                }
+                viewer.Invalidate();
             }
             else
             {
-                var viewer = _main.pap_editor.BaseViewer;
-                if (IsOnEdge(e.Location, cropTangle))
-                    viewer.Cursor = Cursors.SizeNWSE;
-                else if (cropTangle.Contains(e.Location))
-                    viewer.Cursor = Cursors.SizeAll;
-                else
-                    viewer.Cursor = Cursors.Cross;
+                resizeDirection = GetResizeDirection(e.Location, cropTangle);
+                switch (resizeDirection)
+                {
+                    case ResizeDirection.Right:
+                        viewer.Cursor = Cursors.SizeWE;
+                        break;
+                    case ResizeDirection.Bottom:
+                        viewer.Cursor = Cursors.SizeNS;
+                        break;
+                    case ResizeDirection.BottomRight:
+                        viewer.Cursor = Cursors.SizeNWSE;
+                        break;
+                    default:
+                        viewer.Cursor = cropTangle.Contains(e.Location) ? Cursors.SizeAll : Cursors.Cross;
+                        break;
+                }
             }
         }
 
@@ -683,6 +722,8 @@ namespace CFC_Digest_Editor.classes
         {
             isDragging = false;
             isResizing = false;
+            resizeDirection = ResizeDirection.None;
+
             if (_previewCrop != null)
             {
                 _previewCrop.X = (short)cropTangle.X;
@@ -715,6 +756,19 @@ namespace CFC_Digest_Editor.classes
                 g.DrawImage(clone, pixelX, pixelY);
             }
 
+            switch(_previewCrop.Effect)
+            {
+                case Crop.TexEffect.Nope:
+
+                    break;
+                case Crop.TexEffect.BlackAndWhite:
+                    canvas = ToGrayscale(canvas);
+                    break;
+                case Crop.TexEffect.Invert:
+                    canvas = InvertColors(canvas);
+                    break;
+            }
+
             _main.pap_editor.CropBox.Image?.Dispose();
             _main.pap_editor.CropBox.Image = canvas;
             _main.pap_editor.CropBox.Refresh(); // Força atualização imediata
@@ -735,7 +789,10 @@ namespace CFC_Digest_Editor.classes
                 _lastBaseImage?.Dispose();
                 _lastBaseImage = new Bitmap(mage);
                 _lastTexID = selected.TexID;
+
                 _main.pap_editor.BaseViewer.Image = _lastBaseImage;
+                _main.pap_editor.BaseViewer.Width = _lastBaseImage.Width;
+                _main.pap_editor.BaseViewer.Height = _lastBaseImage.Height;
             }
 
             cropTangle = new Rectangle(selected.X, selected.Y, selected.Tex_Width, selected.Tex_Height);
@@ -907,6 +964,26 @@ namespace CFC_Digest_Editor.classes
                 main.pap_editor.BaseViewer);
 
             _main = main;
+            // Suponha que você queira adicionar uma nova linha com altura automática
+            _main.viewLayout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+            _main.viewLayout.RowCount += 1;
+            _main.pap_editor = new PAP_Viewer();
+            // Criar um controle qualquer, por exemplo, um Label
+
+            button.Text = "Apply";
+            button.Click += (s, e) =>
+            {
+                // Aqui você pode adicionar a lógica para o que acontece quando o botão é clicado
+                byte[] rebuiltData = Rebuild();
+                File.WriteAllBytes(Filename, rebuiltData);
+                MessageBox.Show("File/changes saved successfully!","Action");
+            };
+            button.AutoSize = true;
+
+            // Adiciona o controle na nova linha, na coluna 0
+            _main.viewLayout.Controls.Add(button, 0, _main.viewLayout.RowCount - 1);
+
+
             FileName = Filename;
             byte[] data = File.ReadAllBytes(Filename);
 
@@ -942,7 +1019,44 @@ namespace CFC_Digest_Editor.classes
 
 
         }
+        public Bitmap ToGrayscale(Bitmap original)
+        {
+            Bitmap gray = new Bitmap(original.Width, original.Height);
 
+            for (int y = 0; y < original.Height; y++)
+            {
+                for (int x = 0; x < original.Width; x++)
+                {
+                    Color pixel = original.GetPixel(x, y);
+                    int luminance = (int)(pixel.R * 0.3 + pixel.G * 0.59 + pixel.B * 0.11);
+                    Color grayColor = Color.FromArgb(pixel.A, luminance, luminance, luminance);
+                    gray.SetPixel(x, y, grayColor);
+                }
+            }
+
+            return gray;
+        }
+        public Bitmap InvertColors(Bitmap original)
+        {
+            Bitmap inverted = new Bitmap(original.Width, original.Height);
+
+            for (int y = 0; y < original.Height; y++)
+            {
+                for (int x = 0; x < original.Width; x++)
+                {
+                    Color pixel = original.GetPixel(x, y);
+                    Color invertedColor = Color.FromArgb(
+                        pixel.A,
+                        255 - pixel.R,
+                        255 - pixel.G,
+                        255 - pixel.B
+                    );
+                    inverted.SetPixel(x, y, invertedColor);
+                }
+            }
+
+            return inverted;
+        }
         public byte[] Rebuild()
         {
             var list = new List<byte>();
@@ -951,6 +1065,9 @@ namespace CFC_Digest_Editor.classes
             list.AddRange(BitConverter.GetBytes(IndexCount));
             list.AddRange(BitConverter.GetBytes(CanvaCount));
             list.AddRange(BitConverter.GetBytes(CropCount));
+
+            list.AddRange(new byte[8]); //0x0 UINT64
+
             list.AddRange(BitConverter.GetBytes(CropControlOffset));
             list.AddRange(BitConverter.GetBytes(IndexOffset));
             list.AddRange(BitConverter.GetBytes(CanvaOffset));

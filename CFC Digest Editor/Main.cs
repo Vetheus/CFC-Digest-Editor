@@ -20,6 +20,8 @@ namespace CFC_Digest_Editor
     public partial class Main : Form
     {
         public string DigPath, FatPath;
+        public List<string> EncodingFiles = new List<string>();
+        public static string SelectedEncoding;
 
         public static Main maininstance;
         public static bool error;
@@ -39,6 +41,8 @@ namespace CFC_Digest_Editor
             InitializeComponent();
             maininstance = this;
             DigTree.Nodes[0].Tag = (object)"nothing";
+            EncodingFiles.Add("Encoding.enc");
+            SelectedEncoding = "Encoding.enc";
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -272,10 +276,15 @@ namespace CFC_Digest_Editor
                         RecordsList.Add(records);
                         Records.CurrentTbl += 24;
                     }
-                    //await Task.Run(() =>
-                    //{
+#if DEBUG
                     DIG.Unpack(binaryReader1, binaryReader2, this.path, packageList, RecordsList);
-                    //});
+#endif
+#if !DEBUG
+                    await Task.Run(() =>
+                    {
+                        DIG.Unpack(binaryReader1, binaryReader2, this.path, packageList, RecordsList);
+                    });
+#endif
                 }
                 ShowHide(new Control[1] { MainLayout });
 
@@ -348,7 +357,7 @@ namespace CFC_Digest_Editor
                 }
             }
         }
-
+     
         private void PropertyControl_PropertyValueChanged(object s, PropertyValueChangedEventArgs e)
         {
             PropertyControl.Refresh();
@@ -358,9 +367,17 @@ namespace CFC_Digest_Editor
             if (pap_editor.Visible)
             {
                 pap_editor.Close();
-                pap_editor.BaseViewer.Image = null;
-                pap_editor.CropBox.Image = null;
             }
+
+            if (pap != null)
+            {
+                viewLayout.RowStyles.RemoveAt(viewLayout.RowStyles.Count - 1);
+                viewLayout.Controls.Remove(pap.button);
+            }
+
+            pap = null;
+            mb0 = null;
+            TEXmages = null;
 
             PropertyControl.SelectedObject = null;
             imageViewer.Image = null;
@@ -375,7 +392,23 @@ namespace CFC_Digest_Editor
 
         private void dSIExtractorToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            var folder = new FolderBrowserDialog();
+            folder.Description = "Select the folder where you want to extract the files.";
+            if (folder.ShowDialog() != DialogResult.OK)
+                return;
 
+            string output = folder.SelectedPath+@"\";
+
+            var open = new OpenFileDialog();
+            open.Title = "Select the DSI file to extract.";
+            open.Filter = "DSI file (*.DSI) | *.DSI";
+            if (open.ShowDialog() != DialogResult.OK)
+                return;
+
+            string input = open.FileName;
+
+            DSI.ExtractAndMerge(input, $"{output}{Path.GetFileNameWithoutExtension(input)}.m2v",
+                $"{output}{Path.GetFileNameWithoutExtension(input)}.vag");
         }
 
         private void dSICompilerToolStripMenuItem_Click(object sender, EventArgs e)
@@ -389,6 +422,63 @@ namespace CFC_Digest_Editor
             PropertyControl.SelectedObject = obj;
             
         }
+
+        private void otherToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            using (OpenFileDialog openFileDialog = new OpenFileDialog())
+            {
+                openFileDialog.Title = "Select other encoding file...";
+                openFileDialog.Filter = "All files (*.*)|*.*";
+                openFileDialog.Multiselect = false;
+
+                if (openFileDialog.ShowDialog() == DialogResult.OK)
+                {
+                    // Pega o nome com extensão (sem caminho)
+                    string fileName = Path.GetFileName(openFileDialog.FileName);
+                    if(EncodingFiles.Contains(fileName))
+                    {
+                        MessageBox.Show("This encoding file is already loaded!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+                    EncodingFiles.Add(openFileDialog.FileName);
+                    // Cria novo item de menu
+                    ToolStripMenuItem newItem = new ToolStripMenuItem(fileName)
+                    {
+                        Checked = false,
+                        CheckOnClick = true // permite marcar/desmarcar com clique
+                        
+                    };
+                    newItem.Click += new EventHandler(encodingsencToolStripMenuItem_Click);
+                    // Adiciona ao menu (substitua pelo nome real do seu menu)
+                    var last = setEncodingsFileToolStripMenuItem.DropDownItems[setEncodingsFileToolStripMenuItem.DropDownItems.Count - 1];
+                    setEncodingsFileToolStripMenuItem.DropDownItems.Insert(setEncodingsFileToolStripMenuItem.DropDownItems.IndexOf(last), newItem);
+                }
+            }
+        }
+
+        private void encodingsencToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            ToolStripMenuItem clickedItem = (ToolStripMenuItem)sender;
+
+            foreach (ToolStripMenuItem item in setEncodingsFileToolStripMenuItem.DropDownItems)
+            {
+                if (item != clickedItem && item.Text != "Other...")
+                {
+                    item.Checked = false;
+                }
+            }
+
+            // Atualiza a variável SelectedEncoding com base no item selecionado
+            if (clickedItem.Checked)
+            {
+                SelectedEncoding = EncodingFiles.FirstOrDefault(x => Path.GetFileName(x) == clickedItem.Text);
+            }
+            else
+            {
+                SelectedEncoding = null;
+            }
+        }
+
 
         private void DigTree_AfterSelect(object sender, TreeViewEventArgs e)
         {

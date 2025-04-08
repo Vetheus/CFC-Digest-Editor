@@ -53,6 +53,9 @@
             this.contextMenuStrip2 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.extractFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.importFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.setEncodingsFileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.encodingsencToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.otherToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.MainLayout.SuspendLayout();
             this.SubLayout.SuspendLayout();
@@ -128,7 +131,8 @@
             // 
             this.editToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.dSIExtractorToolStripMenuItem,
-            this.dSICompilerToolStripMenuItem});
+            this.dSICompilerToolStripMenuItem,
+            this.setEncodingsFileToolStripMenuItem});
             this.editToolStripMenuItem.Name = "editToolStripMenuItem";
             this.editToolStripMenuItem.Size = new System.Drawing.Size(39, 20);
             this.editToolStripMenuItem.Text = "Edit";
@@ -280,6 +284,32 @@
             this.importFileToolStripMenuItem.Text = "Import File";
             this.importFileToolStripMenuItem.Click += new System.EventHandler(this.importFileToolStripMenuItem_Click);
             // 
+            // setEncodingsFileToolStripMenuItem
+            // 
+            this.setEncodingsFileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.encodingsencToolStripMenuItem,
+            this.otherToolStripMenuItem});
+            this.setEncodingsFileToolStripMenuItem.Name = "setEncodingsFileToolStripMenuItem";
+            this.setEncodingsFileToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.setEncodingsFileToolStripMenuItem.Text = "Set Encodings File";
+            // 
+            // encodingsencToolStripMenuItem
+            // 
+            this.encodingsencToolStripMenuItem.Checked = true;
+            this.encodingsencToolStripMenuItem.CheckOnClick = true;
+            this.encodingsencToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.encodingsencToolStripMenuItem.Name = "encodingsencToolStripMenuItem";
+            this.encodingsencToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.encodingsencToolStripMenuItem.Text = "Encoding.enc";
+            this.encodingsencToolStripMenuItem.Click += new System.EventHandler(this.encodingsencToolStripMenuItem_Click);
+            // 
+            // otherToolStripMenuItem
+            // 
+            this.otherToolStripMenuItem.Name = "otherToolStripMenuItem";
+            this.otherToolStripMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.otherToolStripMenuItem.Text = "Other...";
+            this.otherToolStripMenuItem.Click += new System.EventHandler(this.otherToolStripMenuItem_Click);
+            // 
             // Main
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -322,7 +352,6 @@
         public System.Windows.Forms.TableLayoutPanel MainLayout;
         private System.Windows.Forms.TableLayoutPanel SubLayout;
         private System.Windows.Forms.TreeView DigTree;
-        private System.Windows.Forms.TableLayoutPanel viewLayout;
         public System.Windows.Forms.PictureBox imageViewer;
         public System.Windows.Forms.PropertyGrid PropertyControl;
         private System.Windows.Forms.ContextMenuStrip contextMenuStrip1;
@@ -333,6 +362,10 @@
         private System.Windows.Forms.ToolStripMenuItem importFileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem dSIExtractorToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem dSICompilerToolStripMenuItem;
+        public System.Windows.Forms.TableLayoutPanel viewLayout;
+        private System.Windows.Forms.ToolStripMenuItem setEncodingsFileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem encodingsencToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem otherToolStripMenuItem;
     }
 }
 
