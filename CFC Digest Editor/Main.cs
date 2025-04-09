@@ -294,7 +294,6 @@ namespace CFC_Digest_Editor
                 openToolStripMenuItem.Enabled = false;
                 saveAsToolStripMenuItem.Enabled = true;
                 saveToolStripMenuItem.Enabled = true;
-                closeToolStripMenuItem.Enabled = true;
             }
 
         }
@@ -544,7 +543,6 @@ namespace CFC_Digest_Editor
             openToolStripMenuItem.Enabled = true;
             saveAsToolStripMenuItem.Enabled = false;
             saveToolStripMenuItem.Enabled = false;
-            closeToolStripMenuItem.Enabled = false;
         }
 
         private void DigTree_AfterSelect(object sender, TreeViewEventArgs e)

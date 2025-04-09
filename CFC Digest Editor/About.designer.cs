@@ -54,9 +54,9 @@
             this.label2.ForeColor = System.Drawing.Color.Red;
             this.label2.Location = new System.Drawing.Point(34, 196);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(313, 13);
+            this.label2.Size = new System.Drawing.Size(328, 13);
             this.label2.TabIndex = 3;
-            this.label2.Text = "Código Original por Theus | Uzumaki Chronicles Editor";
+            this.label2.Text = "Ferramenta \"DIG\" por Theus | Uzumaki Chronicles Editor";
             this.label2.Click += new System.EventHandler(this.label1_Click);
             // 
             // label5
@@ -139,7 +139,7 @@
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(49, 13);
             this.label4.TabIndex = 6;
-            this.label4.Text = "Versão 2";
+            this.label4.Text = "Versão 7";
             // 
             // label1
             // 

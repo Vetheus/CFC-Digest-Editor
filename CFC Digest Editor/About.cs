@@ -59,7 +59,7 @@ namespace CFC_Digest_Editor
 
         private void linkLabel2_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            //System.Diagnostics.Process.Start("https://github.com/MiguelQueiroz010/NarutoChronicles-Tools");
+            System.Diagnostics.Process.Start("https://github.com/MiguelQueiroz010/CFC-Digest-Editor");
         }
     }
 }
