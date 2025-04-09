@@ -8,7 +8,7 @@
     <OutputType>WinExe</OutputType>
     <RootNamespace>CFC_Digest_Editor</RootNamespace>
     <AssemblyName>CFC Digest Editor</AssemblyName>
-    <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
@@ -58,6 +58,9 @@
     <Prefer32Bit>true</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="NAudio">
+      <HintPath>E:\Users\Miguel\Downloads\NAudio.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -87,7 +90,9 @@
     <Compile Include="cfcdigutils\FAT.cs" />
     <Compile Include="cfcdigutils\Package.cs" />
     <Compile Include="cfcdigutils\Records.cs" />
+    <Compile Include="classes\ADPCM.cs" />
     <Compile Include="classes\BinaryUtils.cs" />
+    <Compile Include="classes\BitConv.cs" />
     <Compile Include="classes\DSI.cs" />
     <Compile Include="classes\EncFile.cs" />
     <Compile Include="classes\Encodings.cs" />

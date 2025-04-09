@@ -193,7 +193,6 @@ namespace CFC_Digest_Editor
             //        break;
             //}
         }
-
         private async void ReadDig()
         {
             OpenFileDialog openFileDialog1 = new OpenFileDialog();
@@ -295,16 +294,15 @@ namespace CFC_Digest_Editor
                 openToolStripMenuItem.Enabled = false;
                 saveAsToolStripMenuItem.Enabled = true;
                 saveToolStripMenuItem.Enabled = true;
+                closeToolStripMenuItem.Enabled = true;
             }
 
         }
         private void openToolStripMenuItem_Click(object sender, EventArgs e) => ReadDig();
-
         private void imageViewer_Click(object sender, EventArgs e)
         {
 
         }
-
         private void imageViewer_MouseClick(object sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Right)
@@ -357,7 +355,6 @@ namespace CFC_Digest_Editor
                 }
             }
         }
-     
         private void PropertyControl_PropertyValueChanged(object s, PropertyValueChangedEventArgs e)
         {
             PropertyControl.Refresh();
@@ -408,7 +405,7 @@ namespace CFC_Digest_Editor
             string input = open.FileName;
 
             DSI.ExtractAndMerge(input, $"{output}{Path.GetFileNameWithoutExtension(input)}.m2v",
-                $"{output}{Path.GetFileNameWithoutExtension(input)}.vag");
+                $"{output}{Path.GetFileNameWithoutExtension(input)}.raw");
         }
 
         private void dSICompilerToolStripMenuItem_Click(object sender, EventArgs e)
@@ -426,7 +423,7 @@ namespace CFC_Digest_Editor
             // Seleciona o novo VAG
             var openVag = new OpenFileDialog();
             openVag.Title = "Select the new VAG file to inject.";
-            openVag.Filter = "VAG Audio (*.vag)|*.vag";
+            openVag.Filter = "VAG Audio (*.adpcm, *.raw, *.vag)|*.adpcm;*.raw;*.vag";
             if (openVag.ShowDialog() != DialogResult.OK)
                 return;
 
@@ -509,6 +506,46 @@ namespace CFC_Digest_Editor
             }
         }
 
+        private void closeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if(DigTree.Nodes.Count> 0)
+            {
+                DigTree.Nodes.Clear();
+                DigTree.Nodes.Add("data", "data",1);
+                ShowHide(new Control[1] { MainLayout });
+            }
+            if (pap_editor.Visible)
+            {
+                pap_editor.Close();
+            }
+
+            if (pap != null)
+            {
+                viewLayout.RowStyles.RemoveAt(viewLayout.RowStyles.Count - 1);
+                viewLayout.Controls.Remove(pap.button);
+            }
+
+            pap = null;
+            mb0 = null;
+            TEXmages = null;
+
+            PropertyControl.SelectedObject = null;
+            imageViewer.Image = null;
+            imageViewer.Visible = false;
+            // Linha 0 com altura absoluta de 50 pixels
+            viewLayout.RowStyles[0].SizeType = SizeType.Absolute;
+            viewLayout.RowStyles[0].Height = 0;
+            // Linha 1 com 70% do espaço restante
+            viewLayout.RowStyles[1].SizeType = SizeType.Percent;
+            viewLayout.RowStyles[1].Height = 0;
+
+            Directory.Delete(path, true);
+
+            openToolStripMenuItem.Enabled = true;
+            saveAsToolStripMenuItem.Enabled = false;
+            saveToolStripMenuItem.Enabled = false;
+            closeToolStripMenuItem.Enabled = false;
+        }
 
         private void DigTree_AfterSelect(object sender, TreeViewEventArgs e)
         {

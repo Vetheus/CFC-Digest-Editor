@@ -5,6 +5,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using NAudio.Wave;
+
 
 namespace CFC_Digest_Editor.classes
 {
@@ -58,8 +60,14 @@ namespace CFC_Digest_Editor.classes
 
                 folderIndex++;
             }
-
+            videoOutput.Close();
+            audioOutput.Close();
             MessageBox.Show("Extracted sucessfully!", "Action", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+            //if (MessageBox.Show("Want to convert vag to wav?", "Question",
+            //   MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            //    Convert(outputAudioPath, Path.ChangeExtension(outputAudioPath, ".wav"));
+
         }
         public static void BuildDSIFromStreams(string m2vPath, string vagPath, string outputDsiPath)
         {
@@ -127,6 +135,7 @@ namespace CFC_Digest_Editor.classes
             }
 
             MessageBox.Show("DSI rebuild successful!", "Action", MessageBoxButtons.OK, MessageBoxIcon.Information);
+           
         }
 
         private static byte[] ReadBlock(FileStream fs, int maxSize)
@@ -140,8 +149,37 @@ namespace CFC_Digest_Editor.classes
             return buffer;
         }
 
+        public static void Convert(string inputPath, string outputPath)
+        {
+            byte[] adpcm = File.ReadAllBytes(inputPath);
+            byte[] pcm = ADPCM.ToPCMStereo(adpcm, adpcm.Length, 16);
 
+            File.WriteAllBytes(outputPath,SaveRiff(pcm, 2, 48000));
+            MessageBox.Show("Converted sucessfully!!", "Action");
+        }
 
+        public static byte[] SaveRiff(byte[] pcm, short channels, int samplerate)
+        {
+            byte[] data = new byte[pcm.Length + 44];
+            BinaryWriter writer = new BinaryWriter(new MemoryStream(data));
+            writer.Write("RIFF".ToCharArray());
+            writer.Write(36 + pcm.Length);
+            writer.Write("WAVE".ToCharArray());
+            writer.Write("fmt ".ToCharArray());
+            writer.Write(16);
+            writer.Write((ushort)1);
+            writer.Write(channels);
+            writer.Write(samplerate);
+            writer.Write(samplerate * channels * 2);
+            writer.Write((short)(channels * 2));
+            writer.Write((ushort)16);
+            writer.Write("data".ToCharArray());
+            writer.Write(pcm.Length);
+            writer.Write(pcm);
+            writer.Close();
+            return data;
+        }
+    
 
     }
 }
