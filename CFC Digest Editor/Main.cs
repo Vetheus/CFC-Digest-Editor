@@ -413,14 +413,6 @@ namespace CFC_Digest_Editor
 
         private void dSICompilerToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            // Seleciona o DSI original para copiar os headers
-            var openOriginal = new OpenFileDialog();
-            openOriginal.Title = "Select the original DSI file to base the rebuild on.";
-            openOriginal.Filter = "DSI file (*.DSI)|*.DSI";
-            if (openOriginal.ShowDialog() != DialogResult.OK)
-                return;
-
-            string originalDsiPath = openOriginal.FileName;
 
             // Seleciona o novo M2V
             var openM2v = new OpenFileDialog();
@@ -444,14 +436,14 @@ namespace CFC_Digest_Editor
             var save = new SaveFileDialog();
             save.Title = "Save the rebuilt DSI file as...";
             save.Filter = "DSI file (*.DSI)|*.DSI";
-            save.FileName = Path.GetFileNameWithoutExtension(originalDsiPath) + "_rebuilt.dsi";
+            save.FileName = Path.GetFileNameWithoutExtension(newM2vPath) + "_rebuilt.dsi";
             if (save.ShowDialog() != DialogResult.OK)
                 return;
 
             string outputDsiPath = save.FileName;
 
             // Chama a função para reconstruir
-            DSI.RebuildFromOriginal(originalDsiPath, newM2vPath, newVagPath, outputDsiPath);
+            DSI.BuildDSIFromStreams(newM2vPath, newVagPath, outputDsiPath);
         }
         public void RefreshPropertyGrid()
         {

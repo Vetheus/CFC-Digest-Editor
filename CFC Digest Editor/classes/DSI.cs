@@ -31,25 +31,28 @@ namespace CFC_Digest_Editor.classes
 
                 int streamCount = br.ReadInt32();
                 int m2vStartOffset = br.ReadInt32();
-                br.ReadInt32(); // Desconhecido
+                int block1ID = (int)folderData.ReadUInt(0x08,16); // Desconhecido
+                br.ReadInt32();
                 int m2vSize = br.ReadInt32();
                 int vagStartOffset = br.ReadInt32();
-                br.ReadInt32(); // Desconhecido
+                int block2ID = (int)folderData.ReadUInt(0x14, 16); // Desconhecido
+                br.ReadInt32();
                 int vagSize = br.ReadInt32();
 
-                // Adiciona M2V ao arquivo final
-                if (m2vSize > 0 && m2vStartOffset + m2vSize <= FolderSize)
-                {
-                    ms.Position = m2vStartOffset;
-                    byte[] m2vData = br.ReadBytes(m2vSize);
-                    videoOutput.Write(m2vData, 0, m2vData.Length);
-                }
+                ms.Position = m2vStartOffset;
+                byte[] m2vData = br.ReadBytes(m2vSize);
 
-                // Adiciona VAG ao arquivo final
-                if (vagSize > 0 && vagStartOffset + vagSize <= FolderSize)
+                ms.Position = vagStartOffset;
+                byte[] vagData = br.ReadBytes(vagSize);
+
+                if (block1ID != 0xC000)
                 {
-                    ms.Position = vagStartOffset;
-                    byte[] vagData = br.ReadBytes(vagSize);
+                    videoOutput.Write(vagData, 0, vagData.Length);
+                    audioOutput.Write(m2vData, 0, m2vData.Length);
+                }
+                else
+                {
+                    videoOutput.Write(m2vData, 0, m2vData.Length);
                     audioOutput.Write(vagData, 0, vagData.Length);
                 }
 
@@ -58,97 +61,87 @@ namespace CFC_Digest_Editor.classes
 
             MessageBox.Show("Extracted sucessfully!", "Action", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-        public static void RebuildFromOriginal(
-        string originalDsiPath,
-        string newM2vPath,
-        string newVagPath,
-        string outputDsiPath)
+        public static void BuildDSIFromStreams(string m2vPath, string vagPath, string outputDsiPath)
         {
-            byte[] m2vData = File.ReadAllBytes(newM2vPath);
-            byte[] vagData = File.ReadAllBytes(newVagPath);
-
-             var originalStream = new FileStream(originalDsiPath, FileMode.Open, FileAccess.Read);
-             var outputStream = new FileStream(outputDsiPath, FileMode.Create, FileAccess.Write);
-
-            int m2vOffset = 0;
-            int vagOffset = 0;
-            int folderIndex = 0;
             const int FolderSize = 0x40000;
+            const int HeaderSize = 0x40;
+            const int MaxAudioSize = 0x9000;
+            const int MinGapBetweenStreams = 0x1000;
 
-            while (originalStream.Position + FolderSize <= originalStream.Length)
+            FileStream video = new FileStream(m2vPath, FileMode.Open, FileAccess.Read);
+            FileStream audio = new FileStream(vagPath, FileMode.Open, FileAccess.Read);
+            FileStream output = new FileStream(outputDsiPath, FileMode.Create, FileAccess.Write);
+
+            try
             {
-                byte[] folderData = new byte[FolderSize];
-                originalStream.Read(folderData, 0, FolderSize);
-
-                 var ms = new MemoryStream(folderData);
-                 var br = new BinaryReader(ms);
-                 var newFolder = new MemoryStream();
-                 var bw = new BinaryWriter(newFolder);
-
-                // Lê o header
-                int streamCount = br.ReadInt32();   // 0x00
-                int m2vStart = br.ReadInt32();      // 0x04
-                int unknown1 = br.ReadInt32();      // 0x08
-                int m2vSize = br.ReadInt32();       // 0x0C
-                int vagStart = br.ReadInt32();      // 0x10
-                int unknown2 = br.ReadInt32();      // 0x14
-                int vagSize = br.ReadInt32();       // 0x18
-
-                // Copia o header original inteiro
-                newFolder.Write(folderData, 0, m2vStart);
-
-                // ========================
-                // ✅ Substitui M2V
-                // ========================
-                int availableM2v = Math.Min(m2vSize, m2vData.Length - m2vOffset);
-                if (availableM2v > m2vSize)
+                while (video.Position < video.Length || audio.Position < audio.Length)
                 {
-                    throw new Exception($"Novo bloco M2V é maior do que o permitido na pasta {folderIndex}.");
+                    int maxAvailableForVideo = FolderSize - HeaderSize - MaxAudioSize - MinGapBetweenStreams;
+                    byte[] m2vData = ReadBlock(video, maxAvailableForVideo);
+                    byte[] vagData = ReadBlock(audio, MaxAudioSize);
+
+                    int m2vSize = m2vData.Length;
+                    int vagSize = vagData.Length;
+
+                    int m2vOffset = HeaderSize;
+                    int vagOffset = m2vOffset + m2vSize + MinGapBetweenStreams;
+
+                    byte[] folder = new byte[FolderSize];
+                    MemoryStream ms = new MemoryStream(folder, 0, FolderSize, true, true);
+                    BinaryWriter bw = new BinaryWriter(ms);
+
+                    // Header atualizado
+                    bw.Write(2);                       // StreamCount
+                    bw.Write(m2vOffset);               // Offset do bloco de vídeo
+                    bw.Write((ushort)0xC000);          // ID do bloco de vídeo
+                    bw.Write((ushort)0xFFFF);          // Reservado
+                    bw.Write(m2vSize);                 // Tamanho do vídeo
+                    bw.Write(vagOffset);               // Offset do bloco de áudio
+                    bw.Write((ushort)0xE000);          // ID do bloco de áudio
+                    bw.Write((ushort)0xFFFF);          // Constante
+                    bw.Write(vagSize);                 // Tamanho do áudio
+                    bw.Write(0);                       // Reservado
+
+                    // Preencher até 0x40
+                    while (ms.Position < HeaderSize)
+                        ms.WriteByte(0);
+
+                    // Dados
+                    ms.Position = m2vOffset;
+                    ms.Write(m2vData, 0, m2vSize);
+
+                    ms.Position = vagOffset;
+                    ms.Write(vagData, 0, vagSize);
+
+                    output.Write(folder, 0, FolderSize);
+
+                    bw.Dispose();
+                    ms.Dispose();
                 }
-
-                newFolder.Position = m2vStart;
-                bw.Write(m2vData, m2vOffset, availableM2v);
-                m2vOffset += availableM2v;
-
-                // Preenche com zeros se sobrar espaço
-                int padM2v = m2vSize - availableM2v;
-                if (padM2v > 0)
-                    bw.Write(new byte[padM2v]);
-
-                // ========================
-                // ✅ Substitui VAG
-                // ========================
-                int availableVag = Math.Min(vagSize, vagData.Length - vagOffset);
-                if (availableVag > vagSize)
-                {
-                    throw new Exception($"Novo bloco VAG é maior do que o permitido na pasta {folderIndex}.");
-                }
-
-                newFolder.Position = vagStart;
-                bw.Write(vagData, vagOffset, availableVag);
-                vagOffset += availableVag;
-
-                // Preenche com zeros se sobrar espaço
-                int padVag = vagSize - availableVag;
-                if (padVag > 0)
-                    bw.Write(new byte[padVag]);
-
-                // ========================
-                // ✅ Copia resto dos dados da pasta original (caso não sejam do áudio/vídeo)
-                // ========================
-                if (newFolder.Length < FolderSize)
-                {
-                    newFolder.Write(folderData, (int)newFolder.Length, FolderSize - (int)newFolder.Length);
-                }
-
-                // Grava no arquivo final
-                newFolder.Position = 0;
-                newFolder.CopyTo(outputStream);
-
-                folderIndex++;
+            }
+            finally
+            {
+                video.Dispose();
+                audio.Dispose();
+                output.Dispose();
             }
 
-            MessageBox.Show("Rebuild completed successfully!", "Action", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show("DSI rebuild successful!", "Action", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
+
+        private static byte[] ReadBlock(FileStream fs, int maxSize)
+        {
+            if (fs.Position >= fs.Length)
+                return Array.Empty<byte>();
+
+            int remaining = (int)Math.Min(maxSize, fs.Length - fs.Position);
+            byte[] buffer = new byte[remaining];
+            fs.Read(buffer, 0, remaining);
+            return buffer;
+        }
+
+
+
+
     }
 }
