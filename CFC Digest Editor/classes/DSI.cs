@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using NAudio.Wave;
 
 
 namespace CFC_Digest_Editor.classes
@@ -73,7 +72,7 @@ namespace CFC_Digest_Editor.classes
         {
             const int FolderSize = 0x40000;
             const int HeaderSize = 0x40;
-            const int MaxAudioSize = 0x9000;
+            const int MaxAudioSize = 0xB000;
             const int MinGapBetweenStreams = 0x1000;
 
             FileStream video = new FileStream(m2vPath, FileMode.Open, FileAccess.Read);

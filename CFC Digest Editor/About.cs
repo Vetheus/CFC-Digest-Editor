@@ -24,7 +24,7 @@ namespace CFC_Digest_Editor
             Stream str = Properties.Resources.sobre;
             ss = new SoundPlayer(str);
             ss.Play();
-
+            label4.Text = $"Version {Assembly.GetExecutingAssembly().GetName().Version.ToString()}";
 
         }
         void closex()

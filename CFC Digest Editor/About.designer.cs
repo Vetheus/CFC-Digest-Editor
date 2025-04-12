@@ -137,9 +137,9 @@
             this.label4.AutoSize = true;
             this.label4.Location = new System.Drawing.Point(144, 37);
             this.label4.Name = "label4";
-            this.label4.Size = new System.Drawing.Size(49, 13);
+            this.label4.Size = new System.Drawing.Size(10, 13);
             this.label4.TabIndex = 6;
-            this.label4.Text = "Versão 7";
+            this.label4.Text = " ";
             // 
             // label1
             // 
