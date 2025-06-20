@@ -2,7 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection.Emit;
+using System.Text;
 using System.Windows.Forms;
+using System.Xml.Serialization;
 using CFC_Digest_Editor.Classes;
 using CFC_Digest_Editor.Racjin.Assets;
 using CFC_Digest_Editor.Racjin.Assets.Text;
@@ -21,8 +24,7 @@ namespace CFC_Digest_Editor
         public static Main maininstance;
         public string title = "CFCDigestTool";
 
-        public string selectedNodeName;
-        public string selectedNodePath;        
+        public TreeNode selectedNode = new TreeNode();
 
         public IMG TEXmages;
         public PAP pap;
@@ -151,24 +153,26 @@ namespace CFC_Digest_Editor
             if (folderDialog.ShowDialog() != DialogResult.OK)
                 return;
 
-            string output = Path.Combine(Path.GetDirectoryName(folderDialog.FileName), selectedNodeName);
+            string output = Path.Combine(Path.GetDirectoryName(folderDialog.FileName), selectedNode.Text);
             Directory.CreateDirectory(output);
 
+            string folderNode = string.Join(Path.DirectorySeparatorChar.ToString(), selectedNode.FullPath.Split('\\', '/').Skip(3));
             Text = Text + " - Extracting Content...";
-            CloneDirectory(Path.Combine(CurrentTable.OutputDir, CurrentTable.Containers[0].Name + "_", selectedNodePath), output);
+            CloneDirectory(Path.Combine(CurrentTable.OutputDir, CurrentTable.Containers[0].Name + "_", folderNode), output);
             int num = (int)MessageBox.Show("Done.", title);
             Text = String.Concat(title, "- ", CurrentTable.GameTitle);
         }
 
         private void extractFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string input = Path.Combine(CurrentTable.OutputDir, CurrentTable.Containers[0].Name + "_", selectedNodePath);
-            string extension = Path.GetExtension(selectedNodePath);
+            string fileNode = string.Join(Path.DirectorySeparatorChar.ToString(), selectedNode.FullPath.Split('\\', '/').Skip(3));
+            string input = Path.Combine(CurrentTable.OutputDir, CurrentTable.Containers[0].Name + "_", fileNode);
+            string extension = Path.GetExtension(fileNode);
 
 
             FileInfo fileInfo = new FileInfo(input);
 
-            var saveDialog = new SaveFileDialog() { Filter = $"{extension} File (*{extension})|*{extension};", FileName = Path.GetFileName(selectedNodeName) };
+            var saveDialog = new SaveFileDialog() { Filter = $"{extension} File (*{extension})|*{extension};", FileName = Path.GetFileName(selectedNode.Text) };
             if (saveDialog.ShowDialog() != DialogResult.OK)
                 return;
             File.Copy(input, saveDialog.FileName, true);
@@ -177,7 +181,8 @@ namespace CFC_Digest_Editor
 
         private void importFileToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            string input = Path.Combine(CurrentTable.OutputDir, CurrentTable.Containers[0].Name + "_", selectedNodePath);
+            string fileNode = string.Join(Path.DirectorySeparatorChar.ToString(), selectedNode.FullPath.Split('\\', '/').Skip(3));
+            string input = Path.Combine(CurrentTable.OutputDir, CurrentTable.Containers[0].Name + "_", fileNode);
 
             FileInfo fileInfo = new FileInfo(input);
             var openDialog = new OpenFileDialog();
@@ -234,18 +239,16 @@ namespace CFC_Digest_Editor
                     break;
                 default: break;
             }
-            this.selectedNodeName = e.Node.Text;
-            this.selectedNodePath = string.Join(Path.DirectorySeparatorChar.ToString(), e.Node.FullPath.Split('\\', '/').Skip(3));
+            selectedNode = e.Node;
         }
 
         private void treeView1_NodeMouseDoubleClick(object sender, TreeNodeMouseClickEventArgs e)
         {
-            this.selectedNodeName = e.Node.Text;
-            this.selectedNodePath = string.Join(Path.DirectorySeparatorChar.ToString(), e.Node.FullPath.Split('\\', '/').Skip(3));
+            selectedNode = e.Node;
 
             string str = e.Node.Tag.ToString();
 
-            var fileInfo = new FileInfo(this.selectedNodeName);
+            var fileInfo = new FileInfo(selectedNode.Text);
             if (!(str == "file"))
                 return;
         }
@@ -261,7 +264,7 @@ namespace CFC_Digest_Editor
                 saveFileDialog.Title = "Select where to save your TIM2 texture.";
                 saveFileDialog.Filter = "PortableNetworkGrpahics(*.png)|*.png|PS2 TIM2 Texture(*.tm2)|*.tm2";
                 Path.Combine($"{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp}");
-                saveFileDialog.FileName = $"{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp}{Path.GetFileNameWithoutExtension(this.selectedNodeName)}_{Convert.ToInt32(TEXmages.Choosed)}";
+                saveFileDialog.FileName = $"{TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Bpp}{Path.GetFileNameWithoutExtension(selectedNode.Text)}_{Convert.ToInt32(TEXmages.Choosed)}";
                 if (saveFileDialog.ShowDialog() != DialogResult.OK)
                     return;
 
@@ -274,14 +277,12 @@ namespace CFC_Digest_Editor
             }
             else if (e.Button == MouseButtons.Left)
             {
-                string str = Path.Combine(CurrentTable.OutputDir, CurrentTable.Containers[0].Name + "_", this.selectedNodePath);
+                string str = Path.Combine(CurrentTable.OutputDir, CurrentTable.Containers[0].Name + "_", string.Join(Path.DirectorySeparatorChar.ToString(), selectedNode.FullPath.Split('\\', '/').Skip(3)));
 
-                OpenFileDialog opn = new OpenFileDialog();
-                opn.Title = "Select a TIM2 Texture to import.";
-                opn.Filter = "PS2 TIM2 Texture(*.tm2)|*.tm2";
-                if (opn.ShowDialog() == DialogResult.OK)
+                var texDialog = new OpenFileDialog { Title = "Select a TIM2 Texture to import.", Filter = "PS2 TIM2 Texture(*.tm2)|*.tm2" };
+                if (texDialog.ShowDialog() == DialogResult.OK)
                 {
-                    var tim2 = TM2.GetClutandTex(System.IO.File.ReadAllBytes(opn.FileName));
+                    var tim2 = TM2.GetClutandTex(System.IO.File.ReadAllBytes(texDialog.FileName));
                     int bpp = (tim2.Bpp == 5 ? 8 : 4);
                     if (tim2.Width != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Width ||
                         tim2.Height != TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].Height ||
@@ -293,7 +294,7 @@ namespace CFC_Digest_Editor
                             $"Imported: {tim2.Width}x{tim2.Height} - {bpp}Bpp", title, MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
-                    var values = TEXmages.GetPixelandColorData(System.IO.File.ReadAllBytes(opn.FileName), Convert.ToInt32(TEXmages.Choosed), true);
+                    var values = TEXmages.GetPixelandColorData(System.IO.File.ReadAllBytes(texDialog.FileName), Convert.ToInt32(TEXmages.Choosed), true);
                     TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].TEX = values[0];
                     TEXmages.Images[Convert.ToInt32(TEXmages.Choosed)].CLUT = values[1];
                     TEXmages.GetImage(Convert.ToInt32(TEXmages.Choosed), out System.Drawing.Image mage);
@@ -302,7 +303,7 @@ namespace CFC_Digest_Editor
                     TEXmages.ReWriteIMG(str);
                     //File.WriteAllBytes(str,TEXmages.RebuildIMG(tim2.Bpp));
 
-                    MessageBox.Show($"Imported texture from:\n{opn.FileName}!", title);
+                    MessageBox.Show($"Imported texture from:\n{texDialog.FileName}!", title);
                 }
             }
         }
@@ -490,23 +491,17 @@ namespace CFC_Digest_Editor
             switch (e.Node.Tag.ToString())
             {
                 case "file":
-                    this.selectedNodeName = e.Node.Text;
-                    this.selectedNodePath = string.Join(Path.DirectorySeparatorChar.ToString(), e.Node.FullPath.Split('\\', '/').Skip(3));
+                    selectedNode = e.Node;
+                    string fileNode = string.Join(Path.DirectorySeparatorChar.ToString(), selectedNode.FullPath.Split('\\', '/').Skip(3));
 
-                    var fileInfo = new FileInfo(this.selectedNodePath);
+                    var fileInfo = new FileInfo(fileNode);
 
-                    string path = Path.Combine(CurrentTable.OutputDir, CurrentTable.Containers[0].Name + "_", this.selectedNodePath);
+                    string path = Path.Combine(CurrentTable.OutputDir, CurrentTable.Containers[0].Name + "_", fileNode);
                     viewLayout.Visible = true;
                     switch (fileInfo.Extension)
                     {
                         case ".rct":
-                            var test = new byte[20];
-                            using (var reader = new BinaryReader(new FileStream(path, FileMode.Open)))
-                            {
-                                reader.Read(test, 0, 20);
-                            }
-
-                            if (new IMG(this).TryRead(test, imageViewer) != null)
+                            if (Formats.GetExtension(path) == ".img")
                             {
                                 CleanProps();
 
@@ -727,6 +722,72 @@ namespace CFC_Digest_Editor
             }
             foreach (string file in Directory.GetFiles(root))
                 File.Copy(file, Path.Combine(output, Path.GetFileName(file)), true);
+        }
+
+        private void renameFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var sectionNode = selectedNode.Parent;
+            var packetNode = sectionNode.Parent;
+            var containerNode = packetNode.Parent;
+
+
+            string fileNodePath = string.Join(Path.DirectorySeparatorChar.ToString(), selectedNode.FullPath.Split('\\', '/').Skip(3));
+            string input = Path.Combine(CurrentTable.OutputDir, CurrentTable.Containers[0].Name + "_", fileNodePath);
+            string path = Path.GetDirectoryName(input);
+
+        Rename:
+            string fileName = ShowGameSelector(title, selectedNode.Text);
+            if (fileName == null)
+            {
+                MessageBox.Show("You canceled!", title, MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+            else if (fileName == selectedNode.Text)
+            {
+                return;
+            }
+            else if (File.Exists(Path.Combine(path, fileName)))
+            {
+                if (MessageBox.Show($"File {fileName} already exists! Insert new name?", title, MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+                    goto Rename;
+                else
+                    return;
+            }
+            
+            foreach (var container in CurrentTable.Containers)
+            {
+                if (container.Name != containerNode.Text)
+                    continue;
+
+                foreach (var packet in container.assets)
+                {
+                    if (packet.Name != packetNode.Text)
+                        continue;
+
+                    foreach (var section in packet.Sections)
+                    {
+                        if (section.Name != sectionNode.Text)
+                            continue;
+
+                        foreach (var file in section.Files)
+                        {
+                            if (file.Name != selectedNode.Text)
+                                continue;
+
+                            file.Name = fileName;
+                        }
+                    }
+                }
+            }
+            File.Move(input, Path.Combine(path, fileName));
+            selectedNode.Text = fileName;
+
+            var xmlSerializer = new XmlSerializer(typeof(FileAllocationTable));
+
+            using (var sw = new StreamWriter(File.Open(CurrentTable.xmlPath, FileMode.Create, FileAccess.ReadWrite, FileShare.ReadWrite), new UTF8Encoding(false)))
+            {
+                xmlSerializer.Serialize(sw, CurrentTable);
+            }
         }
     }
 }

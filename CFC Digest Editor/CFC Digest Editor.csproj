@@ -79,6 +79,7 @@
     <Compile Include="About.designer.cs">
       <DependentUpon>About.cs</DependentUpon>
     </Compile>
+    <Compile Include="Racjin\Assets\Formats.cs" />
     <Compile Include="Racjin\Assets\Text\EncFile.cs" />
     <Compile Include="Racjin\Assets\Text\Encodings.cs" />
     <Compile Include="Classes\BinaryUtils.cs" />
