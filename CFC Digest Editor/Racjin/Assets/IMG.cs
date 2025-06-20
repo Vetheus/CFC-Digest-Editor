@@ -309,8 +309,8 @@ namespace CFC_Digest_Editor.Racjin.Assets
                         img.Images[Convert.ToInt32(img.Choosed)].TEX = values[0];
                         img.Images[Convert.ToInt32(img.Choosed)].CLUT = values[1];
                         img.GetImage(Convert.ToInt32(img.Choosed), out System.Drawing.Image mage);
-                        IMG._main.imageViewer.Image = mage;
-                        string str = "_main.path" + "\\" + _main.selectedNodePath;
+                        IMG._main.imageViewer.Image = mage;                        
+                        string str = "_main.path" + "\\" + string.Join(Path.DirectorySeparatorChar.ToString(), _main.selectedNode.FullPath.Split('\\', '/').Skip(3));
 
                         img.ReWriteIMG(str);
 
@@ -341,7 +341,7 @@ namespace CFC_Digest_Editor.Racjin.Assets
 
                         bool salvarComoTm2 = result == DialogResult.Yes;
 
-                        string dir = save.SelectedPath + @"/" + Path.GetFileNameWithoutExtension(IMG._main.selectedNodeName);
+                        string dir = save.SelectedPath + @"/" + Path.GetFileNameWithoutExtension(IMG._main.selectedNode.Text);
                         Directory.CreateDirectory(dir);
                         string extensao = salvarComoTm2 ? "tm2" : "png";
                         
@@ -350,14 +350,14 @@ namespace CFC_Digest_Editor.Racjin.Assets
                         {
                             int bpp = img.Images[i].Bpp;
                             var tim = img.GetImage(i, out var mage);
-                            string caminho = Path.Combine(dir, $"{bpp}{Path.GetFileNameWithoutExtension(IMG._main.selectedNodeName)}_{i}.{extensao}");
+                            string caminho = Path.Combine(dir, $"{bpp}{Path.GetFileNameWithoutExtension(IMG._main.selectedNode.Text)}_{i}.{extensao}");
                             if(salvarComoTm2)
                                 File.WriteAllBytes(caminho, tim);
                             else
                                 mage.Save(caminho, System.Drawing.Imaging.ImageFormat.Png);
                         }
 
-                        MessageBox.Show($"Exported textures to:\n{save.SelectedPath + @"/" + Path.GetFileNameWithoutExtension(IMG._main.selectedNodeName)}!", "Action");
+                        MessageBox.Show($"Exported textures to:\n{save.SelectedPath + @"/" + Path.GetFileNameWithoutExtension(IMG._main.selectedNode.Text)}!", "Action");
                     }
                     return value; // Retorna o valor original (ou alterado, se necessário)
                 }
